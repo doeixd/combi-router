@@ -1,0 +1,51 @@
+{
+  "name": "combi-router",
+  "version": "0.0.0",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "engines": {
+    "node": ">=16"
+  },
+  "license": "MIT",
+  "keywords": [
+    "pridepack"
+  ],
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "pridepack": "2.6.4",
+    "standard-version": "^9.5.0",
+    "tslib": "^2.8.1",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "scripts": {
+    "prepublishOnly": "pridepack clean && pridepack build",
+    "build": "pridepack build",
+    "type-check": "pridepack check",
+    "clean": "pridepack clean",
+    "watch": "pridepack watch",
+    "start": "pridepack start",
+    "dev": "pridepack dev",
+    "test": "vitest"
+  },
+  "private": false,
+  "description": "A router based on parser combinators",
+  "repository": {
+    "url": "https://github.com/doeixd/combi-router",
+    "type": "git"
+  },
+  "homepage": "https://github.com/doeixd/combi-router",
+  "bugs": {
+    "url": "https://github.com/doeixd/combi-router/issues"
+  },
+  "author": "Patrick Glenn",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@doeixd/combi-parse": "^0.0.4",
+    "zod": "^3.25.67"
+  }
+}
