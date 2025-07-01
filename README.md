@@ -1,11 +1,3 @@
-Of course. The provided README is excellent but is missing documentation for some of the powerful new features we've implemented, such as **Suspense-based data loading**, **Preloading**, and **View Transitions**.
-
-I have updated the "Advanced Features" and "API Reference" sections to include these new capabilities, complete with explanations and code examples. This will give users a complete picture of the router's modern feature set.
-
-Here is the updated, final README.
-
-***
-
 # Combi-Router
 
 A composable, type-safe router built on parser combinators that thinks in trees. Routes are defined functionally and composed by reference, creating natural hierarchies that mirror your application structure.
@@ -287,6 +279,126 @@ Combi-Router automatically uses the browser's native [View Transitions API](http
 ```
 
 The router handles the rest. No JavaScript changes are needed.
+
+<br />
+
+## 🧩 Vanilla JS Utilities
+
+Combi-Router is framework-agnostic at its core. To help you integrate it into a vanilla JavaScript project, we provide a set of utility functions. These helpers bridge the gap between the router's state and the DOM, making it easy to create navigable links, render nested views, and react to route changes.
+
+### Link & Navigation Helpers
+
+#### `createLink(router, route, params, options)`
+
+Creates a fully functional `<a>` element that navigates using the router. It automatically sets the `href` and intercepts click events to trigger client-side navigation. Each created link comes with a `destroy` function to clean up its event listeners.
+
+```typescript
+import { createLink } from 'combi-router/utils';
+
+const { element, destroy } = createLink(
+  router,
+  userRoute,
+  { id: 123 },
+  { children: 'View Profile', className: 'btn' }
+);
+document.body.appendChild(element);
+
+// Later, when the element is removed from the DOM:
+// destroy();
+```
+
+#### `createActiveLink(router, route, params, options)`
+
+Builds on `createLink` to create an `<a>` element that automatically updates its CSS class when its route is active. This is perfect for navigation menus.
+
+- `activeClassName`: The CSS class to apply when the link is active.
+- `exact`: If `true`, the class is applied only on an exact route match. If `false` (default), it's also applied for any active child routes.
+
+```typescript
+import { createActiveLink } from 'combi-router/utils';
+
+const { element } = createActiveLink(router, dashboardRoute, {}, {
+  children: 'Dashboard',
+  className: 'nav-link',
+  activeClassName: 'font-bold' // Applied on /dashboard, /dashboard/users, etc.
+});
+document.querySelector('nav').appendChild(element);
+```
+
+#### `attachNavigator(element, router, route, params)`
+
+Makes any existing HTML element navigable. This is useful for turning buttons, divs, or other non-anchor elements into type-safe navigation triggers.
+
+```typescript
+import { attachNavigator } from 'combi-router/utils';
+
+const myButton = document.getElementById('home-button');
+const { destroy } = attachNavigator(myButton, router, homeRoute, {});
+```
+
+### Conditional Rendering
+
+#### `createOutlet(router, parentRoute, container, viewMap)`
+
+Provides a declarative "outlet" for nested routing, similar to `<Outlet>` in React Router or `<router-view>` in Vue. It listens for route changes and renders the correct child view into a specified container element.
+
+- `parentRoute`: The route of the component that *contains* the outlet.
+- `container`: The DOM element where child views will be rendered.
+- `viewMap`: An object mapping `Route.id` to an `ElementFactory` function `(match) => Node`.
+
+```typescript
+// In your dashboard layout component
+import { createOutlet } from 'combi-router/utils';
+import { dashboardRoute, usersRoute, settingsRoute } from './routes';
+import { UserListPage, SettingsPage } from './views';
+
+const outletContainer = document.querySelector('#outlet');
+createOutlet(router, dashboardRoute, outletContainer, {
+  [usersRoute.id]: (match) => new UserListPage(match.data), // Pass data to the view
+  [settingsRoute.id]: () => new SettingsPage(),
+});
+```
+
+#### `createMatcher(router)`
+
+Creates a fluent, type-safe conditional tool that reacts to route changes. It's a powerful way to implement declarative logic that isn't tied directly to rendering.
+
+```typescript
+import { createMatcher } from 'combi-router/utils';
+
+// Update the document title based on the active route
+createMatcher(router)
+  .when(homeRoute, () => {
+    document.title = 'My App | Home';
+  })
+  .when(userRoute, (match) => {
+    document.title = `Profile for User ${match.params.id}`;
+  })
+  .otherwise(() => {
+    document.title = 'My App';
+  });
+```
+
+### State Management
+
+#### `createRouterStore(router)`
+
+Creates a minimal, framework-agnostic reactive store for the router's state (`currentMatch`, `isNavigating`, `isFetching`). This is useful for integrating with UI libraries or building your own reactive logic in vanilla JS.
+
+```typescript
+import { createRouterStore } from 'combi-router/utils';
+
+const store = createRouterStore(router);
+
+const unsubscribe = store.subscribe(() => {
+  const { isNavigating } = store.getSnapshot();
+  // Show a global loading indicator while navigating
+  document.body.style.cursor = isNavigating ? 'wait' : 'default';
+});
+
+// To clean up:
+// unsubscribe();
+```
 
 <br />
 

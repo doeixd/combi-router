@@ -10,7 +10,19 @@
   },
   "license": "MIT",
   "keywords": [
-    "pridepack"
+    "pridepack",
+    "router",
+    "typescript",
+    "type-safe",
+    "composable",
+    "parser-combinators",
+    "standard-schema",
+    "routing",
+    "url",
+    "navigation",
+    "combi-parse",
+    "combi-router",
+    "client router"
   ],
   "devDependencies": {
     "@types/node": "^22.10.2",
@@ -46,6 +58,6 @@
   },
   "dependencies": {
     "@doeixd/combi-parse": "^0.0.4",
-    "zod": "^3.25.67"
+    "@standard-schema/spec": "^1.0.0"
   }
 }

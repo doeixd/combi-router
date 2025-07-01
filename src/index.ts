@@ -23,7 +23,10 @@ import {
   type Success,
   success,
 } from '@doeixd/combi-parse';
-import { z } from 'zod';
+// import { z } from 'zod'; // Removed
+import type { StandardSchemaV1 } from '@standard-schema/spec';
+export type { StandardSchemaV1 } from '@standard-schema/spec'; // Re-export for consumers
+export type { StandardSchemaV1 as StandardSchemaV1Namespace } from '@standard-schema/spec'; // Re-exporting
 
 // =================================================================
 // ----------------- SUSPENSE & RESOURCE TYPES ---------------------
@@ -135,7 +138,7 @@ interface RouteMatcher {
   readonly type: 'path' | 'param' | 'query' | 'end' | 'optionalPath' | 'wildcard';
   readonly parser: Parser<any>;
   readonly paramName?: string;
-  readonly schema?: z.ZodType<any>;
+  readonly schema?: StandardSchemaV1<any, any>; // Updated to StandardSchemaV1
   readonly build: (params: Record<string, any>) => string | null;
 }
 
@@ -249,25 +252,27 @@ path.wildcard = function(name = 'wildcard'): RouteMatcher {
 /**
  * Matches a dynamic parameter in the path and validates it using a Zod schema.
  * @param name The name of the parameter (e.g., 'id').
- * @param schema A Zod schema for validation and type coercion.
+ * @param schema A StandardSchema for validation and type coercion.
  * @example
  * // Matches "/users/123" and provides `params.id` as a number.
- * const userRoute = route(path('users'), param('id', z.number()));
+ * // const userRoute = route(path('users'), param('id', YourNumberSchema)); // Example usage
  */
-export function param<T>(name: string, schema: z.ZodType<T>): RouteMatcher {
+export function param<TInput, TOutput>(name: string, schema: StandardSchemaV1<TInput, TOutput>): RouteMatcher {
   return {
     type: 'param',
     paramName: name,
     schema,
     parser: str('/').keepRight(regex(/[^/?#]+/)).chain(value =>
       new Parser(state => {
-        const valueToParse = /^\d+(\.\d+)?$/.test(value) ? Number(value) : value;
-        const result = schema.safeParse(valueToParse);
-        if (!result.success) {
-          const message = `Validation failed for param "${name}": ${result.error.issues.map(i => i.message).join(', ')}`;
+        // Attempt to convert to number if it looks like one, as StandardSchema might expect a specific input type.
+        // This behavior might need refinement based on how schemas are defined (e.g., a schema expecting string but getting number).
+        const valueToParse: unknown = /^\d+(\.\d+)?$/.test(value) ? Number(value) : value;
+        const result = validateWithStandardSchemaSync(schema, valueToParse); // To be created
+        if (result.issues) {
+          const message = `Validation failed for param "${name}": ${result.issues.map(i => i.message).join(', ')}`;
           return failure(message, state);
         }
-        return success({ [name]: result.data }, state);
+        return success({ [name]: result.value }, state);
       })
     ),
     build: (params) => (params[name] !== undefined && params[name] !== null ? `/${encodeURIComponent(params[name])}` : null),
@@ -279,31 +284,33 @@ export function param<T>(name: string, schema: z.ZodType<T>): RouteMatcher {
  * Note: This matcher does not consume path input; it provides metadata for the
  * router to perform validation against the URL's search string after path matching.
  * @param name The name of the query parameter (e.g., 'page').
- * @param schema A Zod schema for validation.
+ * @param schema A StandardSchema for validation.
  * @example
  * // Matches "/items?page=2" and provides `params.page` as a number.
- * const listRoute = route(path('items'), query('page', z.number().default(1)));
+ * // const listRoute = route(path('items'), query('page', YourNumberSchema)); // Example usage
  */
-export function query<T>(name: string, schema: z.ZodType<T>): RouteMatcher {
+export function query<TInput, TOutput>(name: string, schema: StandardSchemaV1<TInput, TOutput>): RouteMatcher {
   return {
     type: 'query',
     paramName: name,
     schema,
-    parser: new Parser((state) => success({ name, schema }, state)),
+    parser: new Parser((state) => success({ name, schema }, state)), // schema is passed to _processParams
     build: (params) => (params[name] !== undefined ? `${name}=${encodeURIComponent(params[name])}` : null),
   };
 }
 
 /**
- * Declares an optional query parameter. A shorthand for making a Zod schema optional.
+ * Declares an optional query parameter. The provided Standard Schema should handle optionality.
  * @param name The name of the query parameter.
- * @param schema A Zod schema for the parameter's type if it exists.
+ * @param schema A StandardSchema for the parameter's type if it exists (e.g., a schema for string | undefined).
  * @example
- * // Matches "/search?q=term" or "/search". `params.q` will be string or undefined.
- * const searchRoute = route(path('search'), query.optional('q', z.string()));
+ * // Matches "/search?q=term" or "/search". `params.q` will be string or undefined if schema allows.
+ * // const searchRoute = route(path('search'), query.optional('q', YourOptionalStringSchema)); // Example usage
  */
-query.optional = <T>(name: string, schema: z.ZodType<T>): RouteMatcher => {
-  return query(name, schema.optional() as any);
+query.optional = <TInput, TOutput>(name: string, schema: StandardSchemaV1<TInput, TOutput>): RouteMatcher => {
+  // Standard Schema doesn't have a generic .optional() modifier like Zod.
+  // The schema itself must define optionality (e.g. by allowing `undefined` input/output).
+  return query(name, schema);
 };
 
 /** A matcher that ensures the path has no remaining segments to parse. */
@@ -594,12 +601,18 @@ export class CombiRouter {
     const queryParams: Record<string, any> = {};
     for (const q of result.value.query) {
       const value = url.searchParams.get(q.name);
+      // For query params, null from searchParams.get means the param is not present.
+      // StandardSchema will typically expect `undefined` for optional values not present.
       const valueToParse = value === null ? undefined : value;
-      const validation = q.schema.safeParse(valueToParse);
-      if (validation.success) {
-        queryParams[q.name] = validation.data;
-      } else {
-        throw new Error(`Query param validation failed for "${q.name}": ${validation.error.message}`);
+      const validationResult = validateWithStandardSchemaSync(q.schema, valueToParse); // To be created
+      if (validationResult.issues) {
+        const message = `Query param validation failed for "${q.name}": ${validationResult.issues.map(i => i.message).join(', ')}`;
+        throw new Error(message);
+      }
+      // Only assign if the value is not undefined, to keep params clean for truly optional fields
+      // that might not be present in the output if they were undefined.
+      if (validationResult.value !== undefined) {
+        queryParams[q.name] = validationResult.value;
       }
     }
     return { pathParams, queryParams };
@@ -639,6 +652,32 @@ export function createRouter(routes: Route<any>[], options: RouterOptions = {}):
 }
 
 // =================================================================
+// ---------------- VALIDATION HELPER ------------------------------
+// =================================================================
+
+/**
+ * Synchronously validates input against a Standard Schema.
+ * Throws if validation is asynchronous.
+ * @internal
+ */
+function validateWithStandardSchemaSync<S extends StandardSchemaV1>(
+  schema: S,
+  input: unknown
+): StandardSchemaV1.Result<StandardSchemaV1.InferOutput<S>> {
+  const validationOutcome = schema['~standard'].validate(input);
+
+  if (validationOutcome instanceof Promise) {
+    // This router's param/query validation path is synchronous.
+    // Async validation for these would require significant refactoring.
+    return {
+      issues: [{ message: "Schema validation must be synchronous for URL parameters." }]
+    } as StandardSchemaV1.FailureResult;
+  }
+  // Type assertion is okay here because we've checked for Promise.
+  return validationOutcome as StandardSchemaV1.Result<StandardSchemaV1.InferOutput<S>>;
+}
+
+// =================================================================
 // -------------------- PARSING INTERNALS --------------------------
 // =================================================================
 
@@ -660,7 +699,7 @@ function buildRouteParser(matchers: readonly RouteMatcher[]): Parser<any> {
 // =================================================================
 
 type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never;
-type InferMatcherParam<T extends RouteMatcher> = T extends { paramName: infer N; schema: z.ZodType<infer S> }
+type InferMatcherParam<T extends RouteMatcher> = T extends { paramName: infer N; schema: StandardSchemaV1<any, infer S> }
   ? N extends string ? { [K in N]: S } : {}
   : T extends { type: 'optionalPath', paramName: infer N }
   ? N extends string ? { [K in N]?: boolean } : {}

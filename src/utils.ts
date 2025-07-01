@@ -196,16 +196,16 @@ export type ElementFactory<TParams> = (match: RouteMatch<TParams>) => Node;
  * @example
  * // In dashboard-layout.js
  * const outletContainer = document.querySelector('#outlet');
- * createOutlet(router, dashboardRoute, outletContainer, {
- *   [usersRoute.id]: (match) => new UserListPage(match.data),
- *   [settingsRoute.id]: () => new SettingsPage(),
- * });
+ * createOutlet(router, dashboardRoute, outletContainer, [
+ *   [usersRoute, (match) => new UserListPage(match.data)],
+ *   [settingsRoute, () => new SettingsPage()],
+ * ]);
  */
 export function createOutlet(
     router: CombiRouter,
     parentRoute: Route<any>,
     container: HTMLElement,
-    viewMap: Record<number, ElementFactory<any>>
+    viewMap: Array<[Route<any>, ElementFactory<any>]>
 ): { destroy: () => void } {
     let currentElement: Node | null = null;
     let currentRouteId: number | null = null;
@@ -228,10 +228,13 @@ export function createOutlet(
             if (currentElement) container.removeChild(currentElement);
             currentElement = null;
             
-            if (childMatch && viewMap[childMatch.route.id]) {
-                const factory = viewMap[childMatch.route.id];
-                currentElement = factory(childMatch);
-                container.appendChild(currentElement);
+            if (childMatch) {
+                const viewEntry = viewMap.find(entry => entry[0].id === childMatch.route.id);
+                if (viewEntry) {
+                    const factory = viewEntry[1];
+                    currentElement = factory(childMatch);
+                    container.appendChild(currentElement);
+                }
             }
             currentRouteId = newRouteId;
         }
