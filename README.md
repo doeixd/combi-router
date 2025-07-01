@@ -1,3 +1,11 @@
+Of course. The provided README is excellent but is missing documentation for some of the powerful new features we've implemented, such as **Suspense-based data loading**, **Preloading**, and **View Transitions**.
+
+I have updated the "Advanced Features" and "API Reference" sections to include these new capabilities, complete with explanations and code examples. This will give users a complete picture of the router's modern feature set.
+
+Here is the updated, final README.
+
+***
+
 # Combi-Router
 
 A composable, type-safe router built on parser combinators that thinks in trees. Routes are defined functionally and composed by reference, creating natural hierarchies that mirror your application structure.
@@ -10,21 +18,21 @@ A composable, type-safe router built on parser combinators that thinks in trees.
 npm install @doeixd/combi-router @doeixd/combi-parse zod
 ```
 
-Combi-Router is built on `@doeixd/combi-parse` for robust URL parsing and uses `zod` or another Standard Schema compliant library for parameter validation.
+Combi-Router is built on `@doeixd/combi-parse` for robust URL parsing and uses `zod` for powerful, type-safe parameter validation.
 
 <br />
 
 ## ✨ Key Features
 
-- **Reference-Based Navigation**: Navigate using route objects for perfect type safety
-- **Functional Composition**: Routes are built by composing pure functions, not method chaining
-- **Natural Tree Structure**: Routes extend each other by reference, creating intuitive hierarchies  
-- **Parser Combinator Foundation**: Built on proven parsing technology for reliable URL matching
-- **End-to-End Type Safety**: Full TypeScript inference from route definition to navigation
-- **Framework Agnostic**: Works with React, Vue, Svelte, or vanilla JavaScript
-- **Production Ready**: SSR, lazy loading, error boundaries, analytics, accessibility
-- **Nested Routes**: First-class support for layouts and nested UI structures
-- **Advanced Features**: Caching, preloading, guards, middleware, plugins
+- **Reference-Based Navigation**: Navigate using route objects for perfect type safety.
+- **Functional Composition**: Build routes by composing pure functions instead of method chaining.
+- **Hierarchical Matching**: Routes extend each other by reference, creating intuitive, nested trees.
+- **Parallel Data Loading**: Loaders for all active nested routes run concurrently for maximum speed.
+- **Suspense & Resources**: Elegant, built-in support for handling asynchronous data states.
+- **View Transitions**: App-like animated page transitions are enabled by default in supported browsers.
+- **End-to-End Type Safety**: Full TypeScript inference from route definition to data access.
+- **Production Ready**: Caching, preloading, guards, lazy-loading, and error boundaries.
+- **Framework Agnostic**: Works with React, Vue, Svelte, or vanilla JavaScript.
 
 <br />
 
@@ -34,7 +42,7 @@ Let's start simple and build up your understanding step by step.
 
 ### Understanding Routes
 
-A **route** in Combi-Router is like a URL pattern that knows how to match and extract data from URLs. Think of it as a blueprint that describes what a URL should look like.
+A **route** in Combi-Router is a blueprint that describes a URL's structure and behavior.
 
 ```typescript
 import { route, path } from 'combi-router';
@@ -45,7 +53,7 @@ export const usersRoute = route(path('users'));
 
 The `route()` function creates a new route from **matchers**. Matchers are small building blocks that each handle one part of a URL.
 
-**Why export routes?** Routes are objects you'll reference throughout your app for navigation, so treating them as exportable values makes them reusable and type-safe.
+**Why export routes?** Routes are first-class objects you'll reference throughout your app for navigation, so treating them as exportable values makes them reusable and type-safe.
 
 ### Basic Matchers
 
@@ -59,15 +67,15 @@ export const aboutRoute = route(path('about'));  // matches "/about"
 // Dynamic parameter with validation
 export const userRoute = route(
   path('users'),
-  param('userId', z.number())  // matches "/users/123"
+  param('id', z.number())  // matches "/users/123" -> params.id is a number
 );
 ```
 
-**Why validation?** URLs are just strings, but your application expects typed data. By validating during route matching, you catch errors early and get proper TypeScript types.
+**Why validation?** URLs are just strings. By validating during route matching, you catch errors early and get proper TypeScript types for your parameters.
 
 ### Building Route Trees
 
-The real power comes from **composing routes by reference**. Instead of redefining common parts, you extend existing routes:
+The real power comes from **composing routes by reference**. Instead of redefining common parts, you `extend` existing routes:
 
 ```typescript
 import { extend } from 'combi-router';
@@ -77,7 +85,7 @@ export const dashboardRoute = route(path('dashboard'));
 
 // Extend the base route
 export const usersRoute = extend(dashboardRoute, path('users'));
-export const userRoute = extend(usersRoute, param('userId', z.number()));
+export const userRoute = extend(usersRoute, param('id', z.number()));
 
 // This creates a natural tree:
 // /dashboard           <- dashboardRoute
@@ -85,11 +93,11 @@ export const userRoute = extend(usersRoute, param('userId', z.number()));
 // /dashboard/users/123 <- userRoute
 ```
 
-**Why extend instead of redefine?** When you change the base route, all extended routes automatically update. Your route structure mirrors your application structure.
+**Why extend?** When you change the base route (e.g., to `/admin`), all extended routes automatically update. Your route structure mirrors your application structure.
 
 ### Adding Behavior with Higher-Order Functions
 
-Routes can be enhanced with additional behavior using **higher-order functions**. These are functions that take a route and return an enhanced version:
+Enhance routes with additional behavior using `pipe()` and higher-order functions:
 
 ```typescript
 import { meta, loader, layout, pipe } from 'combi-router';
@@ -98,7 +106,7 @@ export const enhancedUserRoute = pipe(
   userRoute,
   meta({ title: 'User Profile' }),
   loader(async ({ params }) => {
-    const user = await fetchUser(params.userId);
+    const user = await fetchUser(params.id);
     return { user };
   }),
   layout(ProfileLayout)
@@ -109,7 +117,7 @@ export const enhancedUserRoute = pipe(
 
 ### Creating the Router
 
-Once you have routes, create a router from an array of routes:
+Once you have routes, create a router instance from an array of all your routes:
 
 ```typescript
 import { createRouter } from 'combi-router';
@@ -121,10 +129,10 @@ const router = createRouter([
 ]);
 
 // Reference-based navigation with perfect type safety
-await router.navigate(enhancedUserRoute, { userId: 123 });
+await router.navigate(enhancedUserRoute, { id: 123 });
 
 // Type-safe URL building
-const userUrl = router.build(enhancedUserRoute, { userId: 123 }); // "/dashboard/users/123"
+const userUrl = router.build(enhancedUserRoute, { id: 123 }); // "/dashboard/users/123"
 ```
 
 **Why route references?** Using actual route objects instead of string names provides perfect type inference and makes refactoring safe. TypeScript knows exactly what parameters each route needs.
@@ -148,13 +156,12 @@ param('id', z.number())          // matches "/123" and validates as number
 param('slug', z.string().min(3)) // matches "/hello" with minimum length
 
 // Query parameters
-query('page', z.number().default(1))           // matches "?page=5"
-query.optional('search', z.string())           // matches "?search=term"
+query('page', z.number().default(1)) // matches "?page=5"
+query.optional('search', z.string()) // matches "?search=term"
 
 // Other components
-subdomain('api')                 // matches "api.example.com"
-hash(z.string())                 // matches "#section"
-end                              // ensures no remaining path
+end                              // ensures no remaining path segments
+// subdomain(...) and hash(...) can be added with similar patterns
 ```
 
 ### Route Composition
@@ -162,604 +169,207 @@ end                              // ensures no remaining path
 Routes are composed functionally using `extend()`:
 
 ```typescript
-export const apiRoute = route(subdomain('api'), path('v1'));
+export const apiRoute = route(path('api'), path('v1'));
 export const usersRoute = extend(apiRoute, path('users'));
 export const userRoute = extend(usersRoute, param('id', z.number()));
 
-// Results in: api.example.com/v1/users/123
+// userRoute now matches /api/v1/users/123
 ```
 
-Parameters from parent routes are automatically inherited:
-
-```typescript
-// userRoute has access to all parameters from its ancestors
-type UserParams = InferParams<typeof userRoute>; // { id: number }
-```
+Parameters from parent routes are automatically inherited and merged into a single `params` object.
 
 ### Higher-Order Route Enhancers
 
 Enhance routes with additional functionality:
 
 ```typescript
-import { pipe, meta, loader, guard, cache } from 'combi-router';
+import { pipe, meta, loader, guard, cache, lazy } from 'combi-router';
 
 export const userRoute = pipe(
   route(path('users'), param('id', z.number())),
-  meta({
-    title: (params) => `User ${params.id}`,
-    description: 'User profile page'
-  }),
-  loader(async ({ params }) => {
-    return { user: await fetchUser(params.id) };
-  }),
-  guard(async ({ params }) => {
-    return await canViewUser(params.id) || '/unauthorized';
-  }),
-  cache({ ttl: 5 * 60 * 1000 }) // Cache for 5 minutes
+  meta({ title: (params) => `User ${params.id}` }),
+  loader(async ({ params }) => ({ user: await fetchUser(params.id) })),
+  guard(async () => await isAuthenticated() || '/login'),
+  cache({ ttl: 5 * 60 * 1000 }), // Cache for 5 minutes
+  lazy(() => import('./UserProfile'))
 );
-```
-
-<br />
-
-## 🎯 Framework Integration
-
-### React
-
-```typescript
-import { userRoute, usersRoute } from './routes';
-
-const { RouterProvider, useRouter, useParams, Link, Outlet } = router.createReactIntegration();
-
-function App() {
-  return (
-    <RouterProvider>
-      <nav>
-        <Link to={userRoute} params={{ userId: 123 }}>
-          User Profile
-        </Link>
-      </nav>
-      <main>
-        <Outlet />
-      </main>
-    </RouterProvider>
-  );
-}
-
-function UserPage() {
-  const { userId } = useParams<{ userId: number }>();
-  const navigate = useNavigate();
-  
-  return (
-    <div>
-      <h1>User {userId}</h1>
-      <button onClick={() => navigate(usersRoute, {})}>
-        Back to Users
-      </button>
-    </div>
-  );
-}
-```
-
-### Vue
-
-```typescript
-import { userRoute } from './routes';
-
-const { RouterPlugin, useRoute, RouterView } = router.createVueIntegration();
-
-// Install plugin
-app.use(RouterPlugin, router);
-
-// Use in components
-const UserPage = defineComponent({
-  setup() {
-    const route = useRoute();
-    const params = useParams();
-    
-    return { route, params };
-  }
-});
-```
-
-### Svelte
-
-```typescript
-import { userRoute } from './routes';
-
-const { route, navigate, link } = router.createSvelteIntegration();
-
-// Use in Svelte components
-<script>
-  import { route, navigate } from './router.js';
-  
-  $: currentRoute = $route;
-  
-  function goToUser(id) {
-    navigate(userRoute, { userId: id });
-  }
-</script>
-
-<a href="/users/123" use:link={{ to: userRoute, params: { userId: 123 } }}>
-  User Profile
-</a>
 ```
 
 <br />
 
 ## 🗂️ Advanced Features
 
-### Nested Routes and Layouts
+### Nested Routes and Parallel Data Loading
 
-Create nested UI structures with layouts and outlets:
+When a nested route like `/dashboard/users/123` is matched, Combi-Router builds a tree of match objects. If both `dashboardRoute` and `userRoute` have a `loader`, they are executed **in parallel**, and you can access data from any level of the hierarchy.
 
 ```typescript
-export const dashboardRoute = pipe(
+// dashboard-layout.ts
+const dashboardRoute = pipe(
   route(path('dashboard')),
+  loader(async () => ({ stats: await fetchDashboardStats() })),
   layout(DashboardLayout) // Layout component with <Outlet />
 );
 
-export const userRoute = pipe(
+// user-profile.ts
+const userRoute = pipe(
   extend(dashboardRoute, path('users'), param('id', z.number())),
-  meta({ outlet: 'main' }) // Render in specific outlet
+  loader(async ({ params }) => ({ user: await fetchUser(params.id) }))
 );
 
-// DashboardLayout.jsx
-function DashboardLayout() {
+// In your view for the user route, you can access both sets of data:
+const dashboardData = router.currentMatch.data; // { stats: ... }
+const userData = router.currentMatch.child.data; // { user: ... }
+```
+
+### Suspense-based Data Loading with Resources
+
+For a more granular loading experience, `loader` functions can return `Resource` objects. This allows your UI to "suspend" rendering until the data is ready, which is perfect for showing fine-grained loading spinners.
+
+```typescript
+import { createResource } from 'combi-router';
+
+export const userRoute = pipe(
+  route(path('users'), param('id', z.number())),
+  loader(({ params }) => ({
+    // Each of these will be fetched in parallel by the browser
+    user: createResource(() => fetchUser(params.id)),
+    posts: createResource(() => fetchUserPosts(params.id))
+  }))
+);
+
+// In your UI component (pseudo-code):
+function UserProfile() {
+  const { user, posts } = router.currentMatch.data;
+  
   return (
     <div>
-      <aside>Dashboard Sidebar</aside>
-      <main>
-        <Outlet name="main" />
-      </main>
+      {/* This component suspends until user data is ready */}
+      <UserDetails resource={user} />
+      {/* This component suspends until posts data is ready */}
+      <PostList resource={posts} />
     </div>
   );
 }
 ```
 
-### Data Loading
+### Predictive Preloading
 
-Load data before rendering components:
-
-```typescript
-export const userRoute = pipe(
-  route(path('users'), param('id', z.number())),
-  loader(async ({ params, signal }) => {
-    // Data is available to components as props or through hooks
-    const user = await fetchUser(params.id, { signal });
-    const posts = await fetchUserPosts(params.id);
-    return { user, posts };
-  }),
-  // Parallel loading
-  loader(async ({ params }) => ({
-    $parallel: true,
-    user: () => fetchUser(params.id),
-    profile: () => fetchUserProfile(params.id),
-    settings: () => fetchUserSettings(params.id)
-  }))
-);
-```
-
-### Route Guards
-
-Protect routes with guards:
+Improve perceived performance by loading a route's code and data *before* the user clicks a link. The `router.peek()` method is perfect for this.
 
 ```typescript
-export const adminRoute = pipe(
-  route(path('admin')),
-  guard(async (context) => {
-    const user = await getCurrentUser();
-    if (!user) return '/login';
-    if (!user.isAdmin) return '/forbidden';
-    return true; // Allow navigation
-  })
-);
+// Preload on hover to make navigation feel instantaneous
+myLink.addEventListener('mouseenter', () => {
+  router.peek(userRoute, { id: 123 });
+});
+
+// Navigate as usual on click
+myLink.addEventListener('click', (e) => {
+  e.preventDefault();
+  router.navigate(userRoute, { id: 123 });
+});
 ```
 
-### Lazy Loading
+### View Transitions
 
-Split code with lazy routes:
+Combi-Router automatically uses the browser's native [View Transitions API](https://developer.mozilla.org/en-US/docs/Web/API/View_Transitions_API) for smooth, app-like page transitions. To enable it, simply add a CSS `view-transition-name` to elements that should animate between pages.
 
-```typescript
-export const adminRoute = pipe(
-  route(path('admin')),
-  lazy(() => import('./AdminPanel'), {
-    preload: 'hover', // Preload on hover
-    fallback: { component: LoadingSpinner }
-  })
-);
+```css
+/* On a list page */
+.product-thumbnail {
+  view-transition-name: product-image-123;
+}
+
+/* On a detail page */
+.product-hero-image {
+  view-transition-name: product-image-123; /* Same name! */
+}
 ```
 
-### Caching
-
-Cache route data and components:
-
-```typescript
-export const userRoute = pipe(
-  route(path('users'), param('id', z.number())),
-  cache({
-    key: (params) => `user-${params.id}`,
-    ttl: 5 * 60 * 1000, // 5 minutes
-    staleWhileRevalidate: true
-  })
-);
-```
+The router handles the rest. No JavaScript changes are needed.
 
 <br />
 
-## ⚙️ Configuration
+## ⚙️ Configuration & API
 
-### Router Creation Options
+### Router Creation
 
 ```typescript
-// Array-based (primary API)
-const router = createRouter([homeRoute, usersRoute, userRoute], {
-  baseURL: 'https://myapp.com',
-  hashMode: false,
-  
-  // Performance optimization
-  compilation: {
-    enableCaching: true,
-    optimization: 'balanced'
-  },
-  
-  // Server-side rendering
-  ssr: true,
-  
-  // Internationalization
-  i18n: {
-    locales: ['en', 'fr', 'es'],
-    defaultLocale: 'en',
-    strategy: 'prefix'
-  },
-  
-  // Security
-  security: {
-    csp: {
-      'default-src': ["'self'"],
-      'script-src': ["'self'", 'cdn.example.com']
-    }
-  },
-  
-  // Accessibility
-  a11y: {
-    focusManagement: 'auto',
-    announceRouteChanges: true
+const router = createRouter(
+  [homeRoute, usersRoute, userRoute], // An array of all routes
+  {
+    baseURL: 'https://myapp.com', // For running in a subdirectory
+    hashMode: false, // Use `/#/path` style URLs
   }
-});
-
-// Named routes (backward compatibility)
-const router = createRouter({
-  HOME: homeRoute,
-  USERS: usersRoute,
-  USER: userRoute
-});
+);
 ```
 
 ### Error Handling
 
 ```typescript
-import { notFoundRoute, serverErrorRoute, defaultRoute } from './errorRoutes';
+// Define a fallback route for any URL that doesn't match
+router.fallback(notFoundRoute);
 
-// Custom error routes
-router.catch(404, notFoundRoute);
-router.catch(500, serverErrorRoute);
-router.fallback(defaultRoute);
-
-// Global error handler
-router.onError((error, context) => {
+// Define a global error handler for failures during navigation
+router.onError(({ error, to, from }) => {
   console.error('Navigation error:', error);
-  // Send to error tracking service
+  // Send to an error tracking service
 });
 ```
 
-### Lifecycle Hooks
+### API Reference
 
-```typescript
-// Global hooks
-router.beforeLoad(async (context) => {
-  if (context.to.metadata?.requiresAuth && !await isAuthenticated()) {
-    await router.navigate(loginRoute, {});
-    return 'redirect';
-  }
-  return 'allow';
-});
+#### Core Functions
 
-// Route-specific hooks using references
-router.beforeLoad(userRoute, async (context) => {
-  // context.params is perfectly typed as { userId: number }
-  const userExists = await checkUserExists(context.params.userId);
-  return userExists ? 'allow' : 'block';
-});
-```
+- `route(...matchers)`: Creates a new base route.
+- `extend(baseRoute, ...matchers)`: Creates a new child route from a base.
+- `createRouter(routes, options?)`: Creates the router instance.
+- `createResource(promiseFn)`: Wraps an async function in a suspense-ready resource.
 
-<br />
+#### Route Matchers
 
-## 📚 API Reference
+- `path(segment)`: Matches a static path segment.
+- `path.optional(segment)`: Matches an optional path segment.
+- `path.wildcard(name?)`: Matches all remaining path segments into an array.
+- `param(name, schema)`: Matches a dynamic parameter with Zod validation.
+- `query(name, schema)`: Declares a required query parameter with Zod validation.
+- `query.optional(name, schema)`: Declares an optional query parameter.
+- `end`: Ensures the path has no remaining segments.
 
-### Core Functions
+#### Higher-Order Enhancers
 
-#### `route(...matchers)`
-Creates a new route from matchers.
+- `pipe(route, ...enhancers)`: Applies a series of enhancers to a route.
+- `meta(metadata)`: Attaches arbitrary metadata to a route.
+- `loader(loaderFn)`: Adds a data-loading function to a route.
+- `layout(component)`: Associates a layout component with a route.
+- `guard(...guardFns)`: Protects a route with one or more guard functions.
+- `cache(options)`: Adds caching behavior to a route's loader.
+- `lazy(importFn)`: Makes a route's component lazy-loaded.
 
-```typescript
-export const userRoute = route(
-  path('users'),
-  param('id', z.number())
-);
-```
+#### Router Methods
 
-#### `extend(baseRoute, ...additionalMatchers)`
-Extends an existing route with additional matchers.
+- `navigate(route, params)`: Programmatically navigates to a route.
+- `build(route, params)`: Generates a URL string for a route.
+- `match(url)`: Matches a URL and returns the corresponding `RouteMatch` tree.
+- `peek(route, params)`: Proactively loads a route's code and data.
+- `subscribe(listener)`: Subscribes to route changes.
 
-```typescript
-export const userPostsRoute = extend(
-  userRoute,
-  path('posts')
-);
-```
+#### Router Properties
 
-#### `createRouter(routes, options?)`
-Creates a router instance.
-
-```typescript
-// Array-based (primary API)
-const router = createRouter([userRoute, userPostsRoute]);
-
-// Named routes (backward compatibility)
-const router = createRouter({
-  USER: userRoute,
-  USER_POSTS: userPostsRoute
-});
-```
-
-### Route Matchers
-
-#### Path Matchers
-- `path(segment)` - Matches static path segment
-- `path.optional(segment)` - Matches optional path segment
-- `path.wildcard(name?)` - Matches remaining path segments
-- `param(name, schema)` - Matches dynamic parameter with validation
-
-#### Query Matchers
-- `query(name, schema)` - Matches required query parameter
-- `query.optional(name, schema)` - Matches optional query parameter
-
-#### Other Matchers
-- `subdomain(name)` - Matches static subdomain
-- `subdomain.param(name, schema)` - Matches dynamic subdomain
-- `hash(schema)` - Matches URL hash fragment
-- `end` - Ensures end of path
-
-### Higher-Order Enhancers
-
-#### `meta(metadata)`
-Adds metadata to a route.
-
-```typescript
-meta({
-  title: 'Page Title',
-  description: 'Page description',
-  breadcrumbs: ['Home', 'Users']
-})
-```
-
-#### `loader(loaderFunction)`
-Adds data loading to a route.
-
-```typescript
-loader(async ({ params, signal }) => {
-  return await fetchData(params.id);
-})
-```
-
-#### `layout(component, props?)`
-Wraps route with a layout component.
-
-```typescript
-layout(MainLayout, { showSidebar: true })
-```
-
-#### `lazy(importFunction, options?)`
-Makes route lazy-loaded.
-
-```typescript
-lazy(() => import('./Component'), {
-  preload: 'hover',
-  fallback: LoadingComponent
-})
-```
-
-#### `guard(...guardFunctions)`
-Adds route guards.
-
-```typescript
-guard(async (context) => {
-  return await checkPermission() || '/unauthorized';
-})
-```
-
-#### `cache(options)`
-Adds caching to route.
-
-```typescript
-cache({
-  key: (params) => `cache-key-${params.id}`,
-  ttl: 300000
-})
-```
-
-### Router Methods
-
-#### Navigation (Reference-Based)
-- `navigate(route, params, options?)` - Navigate using route reference
-- `build(route, params)` - Build URL using route reference
-- `navigate(routeName, params, options?)` - Navigate using route name (legacy)
-- `build(routeName, params)` - Build URL using route name (legacy)
-
-#### Other Methods
-- `match(url)` - Match URL against routes
-- `goBack()` - Navigate back in history
-- `goForward()` - Navigate forward in history
-
-#### Lifecycle
-- `beforeLoad(hook)` - Add global before load hook
-- `beforeLoad(route, hook)` - Add route-specific before load hook
-- `beforeLeave(hook)` - Add global before leave hook
-- `beforeLeave(route, hook)` - Add route-specific before leave hook
-- `onRedirect(hook)` - Add redirect hook
-- `onError(handler)` - Add error handler
-
-#### Properties
-- `currentMatch` - Current route match
-- `isNavigating` - Whether navigation is in progress
-- `routes` - Array of all routes
-
-### Framework Integration
-
-#### React Hooks
-- `useRouter()` - Access router instance
-- `useCurrentRoute()` - Access current route
-- `useParams<T>()` - Access route parameters
-- `useSearchParams()` - Access search parameters
-- `useNavigate()` - Get navigation function
-
-#### React Components
-- `<RouterProvider>` - Provides router context
-- `<Link to={route} params={...}>` - Navigation link with route reference
-- `<Outlet name="default">` - Renders child routes
-
-### Development Tools
-
-#### `router.devTools(options)`
-Enable development features.
-
-```typescript
-router.devTools({
-  showRouteTree: true,
-  trackPerformance: true,
-  logNavigations: true
-});
-```
-
-#### Performance Monitoring
-- `getPerformanceMetrics()` - Get route timing data
-- `getSlowRoutes(threshold)` - Find slow routes
-- `debug(route)` - Debug specific route
-
-#### Route Introspection
-- `tree()` - Display route hierarchy
-- `isAncestor(ancestor, descendant)` - Check route relationships
-- `getChildren(baseRoute)` - Get child routes
-- `getParams(route)` - Get route parameter names
-- `findRoute(routeOrName)` - Find route by reference or name
-
-<br />
-
-## 🧪 Testing
-
-### Mock Router
-
-```typescript
-import { userRoute } from './routes';
-
-const mockRouter = CombiRouter.createMockRouter([userRoute], {
-  initialRoute: userRoute,
-  initialParams: { userId: 123 },
-  mockLoaders: {
-    [userRoute.id]: { user: { name: 'Test User' } }
-  }
-});
-
-// Test navigation
-await mockRouter.navigate(userRoute, { userId: 456 });
-mockRouter.expectRoute(userRoute, { userId: 456 });
-```
-
-### React Testing
-
-```typescript
-const TestWrapper = router.createTestWrapper(userRoute, { userId: 123 });
-
-render(
-  <TestWrapper>
-    <UserComponent />
-  </TestWrapper>
-);
-```
-
-<br />
-
-## 🔧 Migration & Compatibility
-
-### From React Router
-
-```typescript
-// React Router
-<Route path="/users/:id" component={UserPage} />
-
-// Combi Router
-export const userRoute = pipe(
-  route(path('users'), param('id', z.string())),
-  meta({ component: UserPage })
-);
-```
-
-### From String-Based Routing
-
-```typescript
-// Old approach (still supported)
-await router.navigate('USER', { userId: 123 });
-const url = router.build('USER', { userId: 123 });
-
-// New reference-based approach (recommended)
-await router.navigate(userRoute, { userId: 123 });
-const url = router.build(userRoute, { userId: 123 });
-```
-
-### Migration Strategy
-
-1. **Start with named routes**: Keep your existing string-based navigation
-2. **Export route objects**: Begin exporting routes as reusable objects
-3. **Gradually migrate navigation**: Replace string navigation with route references
-4. **Update framework integration**: Use route references in Link components
-5. **Switch to array-based router**: Move from named routes to route arrays
+- `currentMatch`: The currently active `RouteMatch` object tree, or `null`.
+- `isNavigating`: A boolean indicating if a navigation is in progress.
+- `isFetching`: A boolean indicating if any route loaders are active.
+- `routes`: A flat array of all registered route objects.
 
 <br />
 
 ## 🎁 Benefits of Reference-Based Approach
 
-### Perfect Type Safety
-- TypeScript infers parameter types directly from route objects
-- Impossible to make typos in route names
-- Refactoring route definitions shows immediate type errors everywhere
-
-### Better IDE Support
-- Autocomplete for route objects
-- Go-to-definition jumps to route definitions
-- Rename refactoring works across the entire codebase
-
-### Functional Composition
-- Routes are first-class values that can be imported/exported
-- Natural composition with `extend()` and `pipe()`
-- Clean separation of route definition and usage
-
-### Framework Agnostic
-- Route references work identically in React, Vue, Svelte
-- No framework-specific route naming conventions
-- Consistent API across all environments
-
-<br />
-
-## 📖 Examples
-
-- [Basic Routing](./examples/basic-routing.md)
-- [Reference-Based Navigation](./examples/reference-navigation.md)
-- [Nested Layouts](./examples/nested-layouts.md)
-- [Authentication](./examples/authentication.md)
-- [Data Loading](./examples/data-loading.md)
-- [Server-Side Rendering](./examples/ssr.md)
-- [TypeScript Integration](./examples/typescript.md)
-- [Migration Guide](./examples/migration.md)
+- **Perfect Type Safety**: Impossible to make typos in route names or pass incorrect parameter types.
+- **Better IDE Support**: Get autocompletion for routes and `go-to-definition` that works.
+- **Confident Refactoring**: Rename a route or change its parameters, and TypeScript will instantly show you everywhere that needs to be updated.
+- **Functional Composition**: Routes are first-class values that can be imported, exported, and composed with pure functions.
+- **Framework Agnostic**: The core logic is pure TypeScript, allowing for simple integration with any framework or vanilla JS.
 
 <br />
 

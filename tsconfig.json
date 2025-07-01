@@ -3,7 +3,7 @@
   "include": ["src", "types"],
   "compilerOptions": {
     "module": "ESNext",
-    "lib": ["ESNext"],
+    "lib": ["ESNext", "dom"],
     "importHelpers": true,
     "declaration": true,
     "sourceMap": true,
@@ -16,7 +16,7 @@
     "moduleResolution": "bundler",
     "jsx": "react",
     "esModuleInterop": true,
-    "target": "es2018",
+    "target": "esnext",
     "useDefineForClassFields": false,
     "declarationMap": true
   }
