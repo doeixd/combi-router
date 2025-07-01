@@ -128,8 +128,9 @@ export function createActiveLink<T>(
             let current: RouteMatch | undefined = match;
             while(current) {
                 if (current.route.id === route.id) {
-                    // It's a match. If `exact` is required, it must be the top-level match.
-                    isActive = options.exact ? current === match : true;
+                    // It's a match.
+                    // If `exact` is true, this `current` node in the match tree must also be a leaf (no children).
+                    isActive = options.exact ? !current.child : true;
                     break;
                 }
                 current = current.child;
@@ -345,13 +346,16 @@ export function createRouterStore(router: CombiRouter): RouterStore {
   // To accurately track isNavigating/isFetching, we need to tap into the
   // navigation lifecycle. The easiest way is to wrap the router's navigate method.
   // A more advanced router might provide `onNavStart` and `onNavEnd` events.
-  const originalNavigate = router.navigate.bind(router);
-  (router as any).navigate = async (...args: any[]) => {
+  const originalNavigate = router.navigate; // Store the original function reference
+  (router as any).navigate = async (...args: any[]) => { // Overwrite with a wrapper
       // Set navigating state to true and immediately update the store.
       router.isNavigating = true;
       update();
       try {
-          return await originalNavigate(args?.[0], args?.[1]);
+          // Call the original function using .call or .apply to maintain `this` context if necessary,
+          // or if originalNavigate might have been a bound function already.
+          // However, since it's a class method, direct call on the instance should be fine.
+          return await originalNavigate.apply(router, args as any);
       } finally {
           // Once navigation completes (or fails), set state back to false and update.
           router.isNavigating = false;

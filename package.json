@@ -26,6 +26,7 @@
   ],
   "devDependencies": {
     "@types/node": "^22.10.2",
+    "jsdom": "^26.1.0",
     "pridepack": "2.6.4",
     "standard-version": "^9.5.0",
     "tslib": "^2.8.1",
@@ -40,7 +41,7 @@
     "watch": "pridepack watch",
     "start": "pridepack start",
     "dev": "pridepack dev",
-    "test": "vitest"
+    "test": "vitest --run"
   },
   "private": false,
   "description": "A router based on parser combinators",
@@ -57,7 +58,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@doeixd/combi-parse": "^0.0.4",
+    "@doeixd/combi-parse": "^0.0.5",
     "@standard-schema/spec": "^1.0.0"
   }
 }

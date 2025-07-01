@@ -19,7 +19,6 @@ import {
   failure,
   optional as optionalParser,
   eof,
-  many,
   type Success,
   success,
 } from '@doeixd/combi-parse';
@@ -135,7 +134,7 @@ export interface RouteMatch<TParams = any> {
 
 /** The internal representation of a route building block (matcher). @internal */
 interface RouteMatcher {
-  readonly type: 'path' | 'param' | 'query' | 'end' | 'optionalPath' | 'wildcard';
+  readonly type: 'path' | 'param' | 'query' | 'end' | 'optionalPath' | 'wildcard' | 'meta';
   readonly parser: Parser<any>;
   readonly paramName?: string;
   readonly schema?: StandardSchemaV1<any, any>; // Updated to StandardSchemaV1
@@ -197,6 +196,17 @@ export class Route<TParams = {}> {
 
   constructor(public readonly matchers: readonly RouteMatcher[], public readonly metadata: RouteMetadata = {}, name?: string) {
     this.name = name;
+    
+    // Extract metadata from meta matchers
+    const metaMatchers = matchers.filter(m => m.type === 'meta');
+    for (const metaMatcher of metaMatchers) {
+      if (metaMatcher.parser) {
+        const result = metaMatcher.parser.run({ input: '', index: 0 });
+        if (result.type === 'success') {
+          Object.assign(this.metadata, result.value);
+        }
+      }
+    }
   }
 
   /**
@@ -223,7 +233,8 @@ export class Route<TParams = {}> {
  * const aboutRoute = route(path('about'));
  */
 export function path(segment: string): RouteMatcher {
-  return { type: 'path', parser: str('/').keepRight(str(segment)), build: () => `/${segment}` };
+  // Ensure path segments don't pollute params by mapping their parser result to an empty object
+  return { type: 'path', parser: str('/').keepRight(str(segment)).map(() => ({})), build: () => `/${segment}` };
 }
 
 /**
@@ -234,7 +245,12 @@ export function path(segment: string): RouteMatcher {
  * const productsRoute = route(path('products'), path.optional('all'));
  */
 path.optional = function(segment: string): RouteMatcher {
-  return { type: 'optionalPath', paramName: segment, parser: optionalParser(str('/').keepRight(str(segment))).map(res => res ? { [segment]: true } : {}), build: (params) => (params[segment] ? `/${segment}` : '') };
+  return {
+    type: 'optionalPath',
+    paramName: segment,
+    parser: optionalParser(str('/' + segment)).map(res => res ? { [segment]: true } : { [segment]: undefined }),
+    build: (params) => (params[segment] ? `/${segment}` : '')
+  };
 };
 
 /**
@@ -246,7 +262,71 @@ path.optional = function(segment: string): RouteMatcher {
  * const fileRoute = route(path('files'), path.wildcard('filePath'));
  */
 path.wildcard = function(name = 'wildcard'): RouteMatcher {
-  return { type: 'wildcard', paramName: name, parser: str('/').keepRight(many(regex(/[^/?#]+/))).map(segments => ({ [name]: segments })), build: (params) => (Array.isArray(params[name]) ? `/${params[name].join('/')}` : null) };
+  return {
+    type: 'wildcard',
+    paramName: name,
+    parser: new Parser((state) => {
+      // Wildcard REQUIRES a leading slash, then consumes segments
+      const remaining = state.input.slice(state.index);
+      
+      // Must start with '/' for wildcard to match
+      if (!remaining.startsWith('/')) {
+        return failure('wildcard requires leading /', state);
+      }
+      
+      // Consume the leading slash
+      let currentIndex = state.index + 1;
+      const segments: string[] = [];
+      
+      // Now parse segments separated by '/'
+      while (currentIndex < state.input.length) {
+        const char = state.input[currentIndex];
+        
+        // Stop at query or hash
+        if (char === '?' || char === '#') {
+          break;
+        }
+        
+        // If we hit another '/', we have a segment to parse
+        if (char === '/') {
+          currentIndex++; // consume the '/'
+          // Find the end of this segment
+          let segmentStart = currentIndex;
+          while (currentIndex < state.input.length && 
+                 state.input[currentIndex] !== '/' && 
+                 state.input[currentIndex] !== '?' && 
+                 state.input[currentIndex] !== '#') {
+            currentIndex++;
+          }
+          const segment = state.input.slice(segmentStart, currentIndex);
+          if (segment) {
+            segments.push(segment);
+          }
+        } else {
+          // First segment after the initial slash
+          let segmentStart = currentIndex;
+          while (currentIndex < state.input.length && 
+                 state.input[currentIndex] !== '/' && 
+                 state.input[currentIndex] !== '?' && 
+                 state.input[currentIndex] !== '#') {
+            currentIndex++;
+          }
+          const segment = state.input.slice(segmentStart, currentIndex);
+          if (segment) {
+            segments.push(segment);
+          }
+        }
+      }
+      
+      return success({ [name]: segments }, { ...state, index: currentIndex });
+    }),
+    build: (params) => {
+      if (Array.isArray(params[name])) {
+        return `/${params[name].map(encodeURIComponent).join('/')}`;
+      }
+      return null;
+    }
+  };
 };
 
 /**
@@ -351,8 +431,23 @@ export function pipe<T>(initial: T, ...fns: Array<(arg: T) => T>): T {
   return fns.reduce((acc, fn) => fn(acc), initial);
 }
 
-export function meta<TParams>(metadata: RouteMetadata) {
-  return (r: Route<TParams>): Route<TParams> => new Route(r.matchers, { ...r.metadata, ...metadata }, r.name);
+export function meta<TParams>(metadata: RouteMetadata): RouteMatcher & ((r: Route<TParams>) => Route<TParams>) {
+  const metaMatcher: RouteMatcher = {
+    type: 'meta',
+    parser: new Parser((state) => success(metadata, state)),
+    build: () => ''
+  };
+  
+  const higherOrderFn = (r: Route<TParams>): Route<TParams> => {
+    // Use the metadata from the closure, not from the parser
+    const combinedMetadata = { ...r.metadata, ...metadata };
+    
+    // Filter out meta matchers when using as higher-order function to avoid re-processing old metadata
+    const nonMetaMatchers = r.matchers.filter(m => m.type !== 'meta');
+    return new Route(nonMetaMatchers, combinedMetadata, r.name);
+  };
+  
+  return Object.assign(higherOrderFn, metaMatcher);
 }
 
 export function loader<TParams>(loaderFn: (context: LoaderContext<TParams>) => Promise<any> | any) {
@@ -495,41 +590,66 @@ export class CombiRouter {
    * @returns The root of the `RouteMatch` tree if successful, otherwise `null`.
    */
   public match(url: string): RouteMatch<any> | null {
-      const parsedUrl = new URL(url, this._options.baseURL || 'http://localhost');
-      
-      const findRecursiveMatch = (currentPath: string, parentPath = ''): RouteMatch<any> | undefined => {
-        let bestMatch: { route: Route<any>; result: Success<any>; remainingPath: string } | null = null;
-        
-        for (const route of this._allRoutes) {
-          const result = route.parser.run({ input: currentPath, index: 0 });
-          if (result.type === 'success') {
-            const remainingPath = result.state.input.slice(result.state.index);
-            if (!bestMatch || remainingPath.length < bestMatch.remainingPath.length) {
-              bestMatch = { route, result, remainingPath };
-            }
-          }
-        }
+     const parsedUrl = new URL(url, this._options.baseURL || 'http://localhost');
+     
+     // Find all routes that can match the full URL
+     const allMatches: { route: Route<any>; result: Success<any>; pathLength: number }[] = [];
+     
+     for (const route of this._allRoutes) {
+       const result = route.parser.run({ input: parsedUrl.pathname, index: 0 });
+       if (result.type === 'success') {
+         const remainingPath = result.state.input.slice(result.state.index);
+         
+         // Consider both complete matches and partial matches (for parent routes)
+         const isCompleteMatch = remainingPath === '' || remainingPath.startsWith('?') || remainingPath.startsWith('#');
+         const isPartialMatch = remainingPath.length > 0 && remainingPath.startsWith('/');
+         
+         if (isCompleteMatch || isPartialMatch) {
+           allMatches.push({ route, result, pathLength: result.state.index });
+         }
+       }
+     }
+     
+   if (allMatches.length === 0) return null;
+     
+     // Sort matches by path length (shortest first = most parent-like)
+     allMatches.sort((a, b) => a.pathLength - b.pathLength);
+   
+  // Take the shortest match as the parent
+   const parentMatch = allMatches[0];
+  const { pathParams: parentPathParams, queryParams } = this._processParams(parentMatch.result, parsedUrl);
+   const parentAllParams = { ...parentPathParams, ...queryParams };
+   
+   // Look for a child match among longer matches
+  let childMatch: RouteMatch<any> | undefined = undefined;
+     
+     for (const match of allMatches.slice(1)) {
+  // Check if this route could be a child (extends the parent path)
+     if (match.pathLength > parentMatch.pathLength) {
+  const { pathParams: childPathParams, queryParams: childQueryParams } = this._processParams(match.result, parsedUrl);
+     const childAllParams = { ...childPathParams, ...childQueryParams };
+       
+         childMatch = {
+           route: match.route,
+          params: childAllParams,
+           pathname: parsedUrl.pathname,
+           search: parsedUrl.search,
+           hash: parsedUrl.hash,
+       };
+       break; // Take the first child found
+       }
+  }
   
-        if (!bestMatch) return undefined;
-
-        const { route, result, remainingPath } = bestMatch;
-        const { pathParams, queryParams } = this._processParams(result, parsedUrl);
-        const allParams = { ...pathParams, ...queryParams };
+     const parentPathname = parsedUrl.pathname.substring(0, parentMatch.pathLength) || '/';
   
-        const matchedPathSegment = currentPath.substring(0, currentPath.length - remainingPath.length) || '/';
-        const fullMatchedPath = parentPath ? `${parentPath.replace(/\/$/, '')}${matchedPathSegment}` : matchedPathSegment;
-
-        return {
-          route,
-          params: allParams,
-          pathname: fullMatchedPath,
-          search: parsedUrl.search,
-          hash: parsedUrl.hash,
-          child: remainingPath && remainingPath !== '/' ? findRecursiveMatch(remainingPath, fullMatchedPath) : undefined,
-        };
-      };
-      
-      return findRecursiveMatch(parsedUrl.pathname) ?? null;
+     return {
+  route: parentMatch.route,
+  params: parentAllParams,
+  pathname: parentPathname,
+  search: parsedUrl.search,
+  hash: parsedUrl.hash,
+  child: childMatch,
+  };
   }
 
   /**
@@ -683,14 +803,15 @@ function validateWithStandardSchemaSync<S extends StandardSchemaV1>(
 
 /** @internal */
 function buildRouteParser(matchers: readonly RouteMatcher[]): Parser<any> {
-    const pathMatchers = matchers.filter(m => m.type !== 'query').map(m => m.parser);
+    const pathMatchers = matchers.filter(m => m.type !== 'query' && m.type !== 'meta').map(m => m.parser);
     const queryMatchers = matchers.filter(m => m.type === 'query').map(m => m.parser);
 
     const pathParser = sequence(pathMatchers).map(results => Object.assign({}, ...results));
-    const queryParser = sequence(queryMatchers).map(results => Object.assign({}, ...results));
+    // queryParser will be an array of {name, schema} objects from each query matcher's parser result
+    const queryParser = sequence(queryMatchers); 
     
-    return pathParser.chain(path => 
-        queryParser.map(query => ({ path, query }))
+    return pathParser.chain(pathResult => 
+        queryParser.map(queryResultArray => ({ path: pathResult, query: queryResultArray }))
     );
 }
 
@@ -705,3 +826,9 @@ type InferMatcherParam<T extends RouteMatcher> = T extends { paramName: infer N;
   ? N extends string ? { [K in N]?: boolean } : {}
   : {};
 type InferMatcherParams<T extends RouteMatcher[]> = UnionToIntersection<{ [K in keyof T]: T[K] extends RouteMatcher ? InferMatcherParam<T[K]> : never }[number]>;
+
+// =================================================================
+// --------------------- UTILITY EXPORTS ---------------------------
+// =================================================================
+
+export * from './utils';
