@@ -70,8 +70,8 @@ const RouterManager = (() => {
     // Intercept all <a> clicks for SPA navigation.
     document.documentElement.addEventListener('click', (event) => {
       const link = (event.target as HTMLElement).closest('a');
-      // Ignore modified clicks, external links, or download links.
-      if (!link || link.origin !== window.location.origin || link.hasAttribute('download') || event.metaKey || event.ctrlKey || event.shiftKey) {
+      // Ignore modified clicks, external links, download links, or no-intercept attribute.
+      if (!link || link.origin !== window.location.origin || link.hasAttribute('download') || link.hasAttribute('no-intercept') || event.metaKey || event.ctrlKey || event.shiftKey) {
         return;
       }
       event.preventDefault();
