@@ -497,7 +497,7 @@ export class CombiRouter {
   private _onError: (context: ErrorContext) => void = () => {};
 
   constructor(routes: Route<any>[], options: RouterOptions) {
-    this._allRoutes = routes;
+    this._allRoutes = [...routes];
     this._options = options;
 
     if(typeof window !== 'undefined') {
@@ -507,6 +507,15 @@ export class CombiRouter {
         });
         window.addEventListener('online', () => (this.isOnline = true));
         window.addEventListener('offline', () => (this.isOnline = false));
+        
+        // Handle bfcache restoration
+        window.addEventListener('pageshow', (event) => {
+            if (event.persisted) {
+                // Page was restored from bfcache, re-run navigation to current URL
+                const currentUrl = window.location.pathname + window.location.search + window.location.hash;
+                this._navigateToURL(currentUrl, true);
+            }
+        });
     }
   }
 
@@ -515,6 +524,62 @@ export class CombiRouter {
   public subscribe(listener: Listener): () => void { this._listeners.add(listener); listener(this.currentMatch); return () => this._listeners.delete(listener); }
   public fallback(route: Route<any>) { this._fallbackRoute = route; }
   public onError(handler: (context: ErrorContext) => void) { this._onError = handler; }
+
+  /**
+   * Dynamically adds a new route to the router.
+   * @param route The route to add.
+   * @returns True if successfully added, false if route already exists.
+   */
+  public addRoute(route: Route<any>): boolean {
+    if (this._allRoutes.some(r => r.id === route.id)) {
+      return false; // Route already exists
+    }
+    this._allRoutes.push(route);
+    return true;
+  }
+
+  /**
+   * Dynamically removes a route from the router.
+   * @param route The route to remove.
+   * @returns True if successfully removed, false if route was not found.
+   */
+  public removeRoute(route: Route<any>): boolean {
+    const index = this._allRoutes.findIndex(r => r.id === route.id);
+    if (index === -1) {
+      return false; // Route not found
+    }
+    this._allRoutes.splice(index, 1);
+    
+    // If we're currently on this route, navigate to fallback or root
+    if (this.currentMatch && this._isRouteInMatchTree(this.currentMatch, route)) {
+      if (this._fallbackRoute) {
+        this.navigate(this._fallbackRoute, {});
+      } else {
+        // Navigate to root or first available route
+        const firstRoute = this._allRoutes[0];
+        if (firstRoute) {
+          this.navigate(firstRoute, {});
+        }
+      }
+    }
+    
+    return true;
+  }
+
+  /**
+   * Checks if a route is present in the current match tree.
+   * @private
+   */
+  private _isRouteInMatchTree(match: RouteMatch<any>, route: Route<any>): boolean {
+    let current: RouteMatch<any> | undefined = match;
+    while (current) {
+      if (current.route.id === route.id) {
+        return true;
+      }
+      current = current.child;
+    }
+    return false;
+  }
 
   /**
    * Builds a URL string for a given route and its parameters.

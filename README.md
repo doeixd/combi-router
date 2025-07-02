@@ -1,4 +1,6 @@
-# Combi-Router
+[![npm version](https://badge.fury.io/js/@doeixd%2Fcombi-router.svg)](https://badge.fury.io/js/@doeixd%2Fcombi-router) [![TypeScript](https://img.shields.io/badge/-TypeScript-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/) [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/) [![Build Status](https://img.shields.io/github/actions/workflow/status/doeixd/combi-router/ci.yml?branch=main)](https://github.com/doeixd/combi-router/actions)
+
+# Combi-Router 🛤️
 
 A composable, type-safe router built on parser combinators that thinks in trees. Routes are defined functionally and composed by reference, creating natural hierarchies that mirror your application structure.
 
@@ -37,7 +39,7 @@ Let's start simple and build up your understanding step by step.
 A **route** in Combi-Router is a blueprint that describes a URL's structure and behavior.
 
 ```typescript
-import { route, path } from 'combi-router';
+import { route, path } from '@doeixd/combi-router';
 
 // This route matches the exact path "/users"
 export const usersRoute = route(path('users'));
@@ -50,7 +52,7 @@ The `route()` function creates a new route from **matchers**. Matchers are small
 ### Basic Matchers
 
 ```typescript
-import { route, path, param } from 'combi-router';
+import { route, path, param } from '@doeixd/combi-router';
 import { z } from 'zod';
 
 // Static path segment
@@ -70,7 +72,7 @@ export const userRoute = route(
 The real power comes from **composing routes by reference**. Instead of redefining common parts, you `extend` existing routes:
 
 ```typescript
-import { extend } from 'combi-router';
+import { extend } from '@doeixd/combi-router';
 
 // Base route
 export const dashboardRoute = route(path('dashboard'));
@@ -92,7 +94,7 @@ export const userRoute = extend(usersRoute, param('id', z.number()));
 Enhance routes with additional behavior using `pipe()` and higher-order functions:
 
 ```typescript
-import { meta, loader, layout, pipe } from 'combi-router';
+import { meta, loader, layout, pipe } from '@doeixd/combi-router';
 
 export const enhancedUserRoute = pipe(
   userRoute,
@@ -112,7 +114,7 @@ export const enhancedUserRoute = pipe(
 Once you have routes, create a router instance from an array of all your routes:
 
 ```typescript
-import { createRouter } from 'combi-router';
+import { createRouter } from '@doeixd/combi-router';
 
 const router = createRouter([
   dashboardRoute,
@@ -175,7 +177,7 @@ Parameters from parent routes are automatically inherited and merged into a sing
 Enhance routes with additional functionality:
 
 ```typescript
-import { pipe, meta, loader, guard, cache, lazy } from 'combi-router';
+import { pipe, meta, loader, guard, cache, lazy } from '@doeixd/combi-router';
 
 export const userRoute = pipe(
   route(path('users'), param('id', z.number())),
@@ -219,7 +221,7 @@ const userData = router.currentMatch.child.data; // { user: ... }
 For a more granular loading experience, `loader` functions can return `Resource` objects. This allows your UI to "suspend" rendering until the data is ready, which is perfect for showing fine-grained loading spinners.
 
 ```typescript
-import { createResource } from 'combi-router';
+import { createResource } from '@doeixd/combi-router';
 
 export const userRoute = pipe(
   route(path('users'), param('id', z.number())),
@@ -293,7 +295,7 @@ Combi-Router is framework-agnostic at its core. To help you integrate it into a 
 Creates a fully functional `<a>` element that navigates using the router. It automatically sets the `href` and intercepts click events to trigger client-side navigation. Each created link comes with a `destroy` function to clean up its event listeners.
 
 ```typescript
-import { createLink } from 'combi-router/utils';
+import { createLink } from '@doeixd/@doeixd/combi-router/utils';
 
 const { element, destroy } = createLink(
   router,
@@ -315,7 +317,7 @@ Builds on `createLink` to create an `<a>` element that automatically updates its
 - `exact`: If `true`, the class is applied only on an exact route match. If `false` (default), it's also applied for any active child routes.
 
 ```typescript
-import { createActiveLink } from 'combi-router/utils';
+import { createActiveLink } from '@doeixd/combi-router/utils';
 
 const { element } = createActiveLink(router, dashboardRoute, {}, {
   children: 'Dashboard',
@@ -330,7 +332,7 @@ document.querySelector('nav').appendChild(element);
 Makes any existing HTML element navigable. This is useful for turning buttons, divs, or other non-anchor elements into type-safe navigation triggers.
 
 ```typescript
-import { attachNavigator } from 'combi-router/utils';
+import { attachNavigator } from '@doeixd/combi-router/utils';
 
 const myButton = document.getElementById('home-button');
 const { destroy } = attachNavigator(myButton, router, homeRoute, {});
@@ -348,7 +350,7 @@ Provides a declarative "outlet" for nested routing, similar to `<Outlet>` in Rea
 
 ```typescript
 // In your dashboard layout component
-import { createOutlet } from 'combi-router/utils';
+import { createOutlet } from '@doeixd/combi-router/utils';
 import { dashboardRoute, usersRoute, settingsRoute } from './routes';
 import { UserListPage, SettingsPage } from './views';
 
@@ -364,7 +366,7 @@ createOutlet(router, dashboardRoute, outletContainer, {
 Creates a fluent, type-safe conditional tool that reacts to route changes. It's a powerful way to implement declarative logic that isn't tied directly to rendering.
 
 ```typescript
-import { createMatcher } from 'combi-router/utils';
+import { createMatcher } from '@doeixd/combi-router/utils';
 
 // Update the document title based on the active route
 createMatcher(router)
@@ -386,7 +388,7 @@ createMatcher(router)
 Creates a minimal, framework-agnostic reactive store for the router's state (`currentMatch`, `isNavigating`, `isFetching`). This is useful for integrating with UI libraries or building your own reactive logic in vanilla JS.
 
 ```typescript
-import { createRouterStore } from 'combi-router/utils';
+import { createRouterStore } from '@doeixd/combi-router/utils';
 
 const store = createRouterStore(router);
 
@@ -399,6 +401,56 @@ const unsubscribe = store.subscribe(() => {
 // To clean up:
 // unsubscribe();
 ```
+
+<br />
+
+## 🎨 Web Components
+
+For even simpler integration, Combi-Router provides ready-to-use Web Components that handle routing declaratively in your HTML:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <script type="module">
+        // Import standalone components (no setup required!)
+        import '@doeixd/combi-router/components-standalone';
+    </script>
+</head>
+<body>
+    <!-- Define your routes declaratively -->
+    <view-area match="/users/:id" view-id="user-detail"></view-area>
+    <view-area match="/about" view-id="about-page"></view-area>
+
+    <!-- Define your templates -->
+    <template is="view-template" view-id="user-detail">
+        <h1>User Details</h1>
+        <p>User ID: <span class="user-id"></span></p>
+    </template>
+
+    <template is="view-template" view-id="about-page">
+        <h1>About</h1>
+        <p>This is the about page.</p>
+    </template>
+
+    <!-- Navigation works automatically -->
+    <nav>
+        <a href="/users/123">User 123</a>
+        <a href="/about">About</a>
+    </nav>
+</body>
+</html>
+```
+
+### Key Benefits
+
+- **Zero JavaScript Configuration**: Just import and use
+- **Declarative Routing**: Define routes in HTML attributes
+- **Automatic Navigation**: Links work out of the box
+- **Progressive Enhancement**: Works with or without JavaScript
+- **Dynamic Route Management**: Add/remove routes programmatically when needed
+
+[Learn more →](./COMPONENTS.md)
 
 <br />
 

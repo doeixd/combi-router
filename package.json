@@ -1,5 +1,5 @@
 {
-  "name": "combi-router",
+  "name": "@doeixd/combi-router",
   "version": "0.0.0",
   "files": [
     "dist",
@@ -21,7 +21,7 @@
     "url",
     "navigation",
     "combi-parse",
-    "combi-router",
+    "@doeixd/combi-router",
     "client router"
   ],
   "devDependencies": {
@@ -36,8 +36,8 @@
   },
   "scripts": {
     "release": "standard-version && git push --follow-tags origin main",
-    "prepublishOnly": "pridepack clean && pridepack build",
-    "build": "pridepack build",
+    "prepublishOnly": "pridepack clean && pridepack build && node scripts/fix-standalone.js",
+    "build": "pridepack build && node scripts/fix-standalone.js",
     "type-check": "pridepack check",
     "clean": "pridepack clean",
     "watch": "pridepack watch",
@@ -62,5 +62,59 @@
   "dependencies": {
     "@doeixd/combi-parse": "^0.0.5",
     "@standard-schema/spec": "^1.0.0"
+  },
+  "exports": {
+    "0": {
+      "types": "./dist/types/index.d.ts",
+      "development": {
+        "require": "./dist/cjs/development/0.js",
+        "import": "./dist/esm/development/0.js"
+      },
+      "require": "./dist/cjs/production/0.js",
+      "import": "./dist/esm/production/0.js"
+    },
+    "1": {
+      "types": "./dist/types/components.d.ts",
+      "development": {
+        "require": "./dist/cjs/development/1.js",
+        "import": "./dist/esm/development/1.js"
+      },
+      "require": "./dist/cjs/production/1.js",
+      "import": "./dist/esm/production/1.js"
+    },
+    "2": {
+      "types": "./dist/types/components-standalone.d.ts",
+      "development": {
+        "require": "./dist/cjs/development/2.js",
+        "import": "./dist/esm/development/2.js"
+      },
+      "require": "./dist/cjs/production/2.js",
+      "import": "./dist/esm/production/2.js"
+    },
+    "3": {
+      "types": "./dist/types/utils.d.ts",
+      "development": {
+        "require": "./dist/cjs/development/3.js",
+        "import": "./dist/esm/development/3.js"
+      },
+      "require": "./dist/cjs/production/3.js",
+      "import": "./dist/esm/production/3.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "0": [
+        "./dist/types/index.d.ts"
+      ],
+      "1": [
+        "./dist/types/components.d.ts"
+      ],
+      "2": [
+        "./dist/types/components-standalone.d.ts"
+      ],
+      "3": [
+        "./dist/types/utils.d.ts"
+      ]
+    }
   }
 }
