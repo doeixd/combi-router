@@ -134,33 +134,56 @@ describe('CombiRouter Utilities (src/utils.ts)', () => {
   });
   
   // Helper to create a router instance for utils tests
-  const createMockRouter = (initialMatch: RouteMatch<any> | null = null): CombiRouter => {
-    const router = createRouter([], { baseURL: 'http://localhost' }); // No routes needed for many util tests, or add as needed
-    router.currentMatch = initialMatch;
-    // Mock crucial methods
-    router.navigate = vi.fn().mockResolvedValue(true);
-    router.build = vi.fn((routeToDo, paramsToBuild) => {
-        // Simple build mock: /routePathname?param1=value1
-        let path = routeToDo.matchers.filter((m: any) => m.type === 'path' || m.type === 'param').reduce((acc: any, m: any) => {
-            if (m.type === 'path') return acc + m.build({}); // Static path parts
-            if (m.paramName && paramsToBuild[m.paramName]) return acc + `/${paramsToBuild[m.paramName]}`;
-            return acc;
-        }, '');
-        if (!path.startsWith('/')) path = '/' + path;
-        
-        const queryParams = [];
-        for(const matcher of routeToDo.matchers) {
-            if(matcher.type === 'query' && matcher.paramName && paramsToBuild[matcher.paramName] !== undefined) {
-                queryParams.push(`${matcher.paramName}=${encodeURIComponent(paramsToBuild[matcher.paramName])}`);
-            }
-        }
-        return path + (queryParams.length ? `?${queryParams.join('&')}` : '');
-    });
-    router.subscribe = vi.fn(listener => {
-      listener(router.currentMatch); // Call immediately like the real one
-      return vi.fn(); // Return an unsubscribe function
-    });
-    return router;
+  const createMockRouter = (initialMatch: RouteMatch<any> | null = null): any => {
+    const mockRouter = {
+      currentMatch: initialMatch,
+      isNavigating: false,
+      isFetching: false,
+      routes: [],
+      context: {},
+      currentNavigation: null,
+      isOnline: true,
+      navigate: vi.fn().mockResolvedValue(true),
+      replace: vi.fn().mockResolvedValue(true),
+      build: vi.fn((routeToDo, paramsToBuild) => {
+          // Simple build mock: /routePathname?param1=value1
+          let path = routeToDo.matchers.filter((m: any) => m.type === 'path' || m.type === 'param').reduce((acc: any, m: any) => {
+              if (m.type === 'path') return acc + m.build({}); // Static path parts
+              if (m.paramName && paramsToBuild[m.paramName]) return acc + `/${paramsToBuild[m.paramName]}`;
+              return acc;
+          }, '');
+          if (!path.startsWith('/')) path = '/' + path;
+          
+          const queryParams: string[] = [];
+          for(const matcher of routeToDo.matchers) {
+              if(matcher.type === 'query' && matcher.paramName && paramsToBuild[matcher.paramName] !== undefined) {
+                  queryParams.push(`${matcher.paramName}=${encodeURIComponent(paramsToBuild[matcher.paramName])}`);
+              }
+          }
+          return path + (queryParams.length ? `?${queryParams.join('&')}` : '');
+      }),
+      match: vi.fn(),
+      subscribe: vi.fn(listener => {
+        listener(mockRouter.currentMatch); // Call immediately like the real one
+        return vi.fn(); // Return an unsubscribe function
+      }),
+      unsubscribe: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      destroy: vi.fn(),
+      addRoute: vi.fn(),
+      removeRoute: vi.fn(),
+      navigateToURL: vi.fn(),
+      cancelNavigation: vi.fn(),
+      addNavigationGuard: vi.fn(),
+      removeNavigationGuard: vi.fn(),
+      addDataLoader: vi.fn(),
+      removeDataLoader: vi.fn(),
+      addErrorHandler: vi.fn(),
+      removeErrorHandler: vi.fn(),
+      isInitialized: true
+    };
+    return mockRouter;
   };
 
   // Define some mock routes for utils
@@ -564,15 +587,13 @@ describe('CombiRouter Utilities (src/utils.ts)', () => {
   });
 
   describe('createRouterStore()', () => {
-    let mockRouter: CombiRouter;
+    let mockRouter: any;
 
     beforeEach(() => {
         // For store tests, we need a router that can have its properties changed
         // and can simulate the navigate monkey-patching.
-        const r = createRouter([homeRoute, userRoute]);
-        // Spy on the actual navigate to ensure it's called by the wrapper
-        vi.spyOn(r, 'navigate' as any); 
-        mockRouter = r; // Use this semi-real router
+        mockRouter = createMockRouter(); // Use the mutable mock router
+        mockRouter.routes = [homeRoute, userRoute];
     });
 
     it('should initialize with current router state', () => {

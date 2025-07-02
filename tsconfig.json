@@ -1,6 +1,6 @@
 {
   "exclude": ["node_modules"],
-  "include": ["src", "types", "test"],
+  "include": ["src", "types"],
   "compilerOptions": {
     "module": "ESNext",
     "lib": ["ESNext", "dom", "DOM"],
@@ -19,5 +19,6 @@
     "target": "esnext",
     "useDefineForClassFields": false,
     "declarationMap": true,
+    "skipLibCheck": true
   }
 }

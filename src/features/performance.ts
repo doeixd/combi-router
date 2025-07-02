@@ -188,6 +188,12 @@ export class PerformanceManager {
 
   private initializeViewportPrefetching(): void {
     if (!this.config.prefetchViewport) return;
+    
+    // Check if IntersectionObserver is available (not in test environment)
+    if (typeof IntersectionObserver === 'undefined') {
+      console.warn('[PerformanceManager] IntersectionObserver not available, viewport prefetching disabled');
+      return;
+    }
 
     this.intersectionObserver = new IntersectionObserver(
       (entries) => {

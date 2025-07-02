@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Combi-Router Auto Head Discovery Demo</title>
+    
+    <script type="module">
+        // Import the standalone components
+        import '@doeixd/combi-router/components-standalone';
+        
+        // Optional: Listen for route changes
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const router = window.myAppRouter;
+                if (router) {
+                    router.subscribe((match) => {
+                        console.log('Route changed:', match);
+                        updateDebugPanel();
+                    });
+                }
+            }, 100);
+        });
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        nav {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        nav a {
+            margin-right: 1rem;
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        nav a:hover {
+            text-decoration: underline;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .card {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+        }
+        
+        .badge {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+        
+        .info-box {
+            background: #e0f2fe;
+            border: 1px solid #0288d1;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            color: #0277bd;
+        }
+        
+        .debug-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            max-width: 350px;
+            font-size: 0.875rem;
+            border: 2px solid #4caf50;
+        }
+        
+        .debug-panel h4 {
+            margin: 0 0 0.5rem 0;
+            color: #2e7d32;
+        }
+        
+        .debug-panel div {
+            margin-bottom: 0.25rem;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Auto Head Discovery Demo</h1>
+        <p>This demo showcases the new <strong>automatic head discovery</strong> feature where <code>view-head</code> components automatically register with their parent <code>view-template</code>.</p>
+        
+        <!-- Navigation -->
+        <nav>
+            <a href="/">Home</a>
+            <a href="/about">About</a>
+            <a href="/products/laptop">Laptop</a>
+            <a href="/products/phone">Phone</a>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/dashboard/users">Users</a>
+            <a href="/dashboard/users/123">User 123</a>
+        </nav>
+        
+        <!-- Route Areas - Notice: NO head-id attributes needed! -->
+        <main>
+            <!-- Home route -->
+            <view-area match="/" view-id="home"></view-area>
+            
+            <!-- About route -->
+            <view-area match="/about" view-id="about"></view-area>
+            
+            <!-- Product routes -->
+            <view-area match="/products/:slug" view-id="product"></view-area>
+            
+            <!-- Nested dashboard routes -->
+            <view-area match="/dashboard" view-id="dashboard"></view-area>
+            <view-area match="/dashboard/users" view-id="users-list"></view-area>
+            <view-area match="/dashboard/users/:id" view-id="user-profile"></view-area>
+        </main>
+        
+        <!-- Templates with embedded head management -->
+        <template is="view-template" view-id="home">
+            <!-- Head automatically discovered and linked to home view-area -->
+            <view-head 
+                title="Welcome Home"
+                description="The best web application built with modern routing and automatic head discovery"
+                keywords="home, routing, spa, automatic, discovery"
+                og-title="Welcome to Our Amazing App"
+                og-description="Experience automatic head management"
+                og-image="https://example.com/home-og.jpg"
+                twitter-card="summary_large_image">
+            </view-head>
+            
+            <div class="card">
+                <h1>🏠 Welcome Home</h1>
+                <p>This page demonstrates automatic head discovery. The <code>view-head</code> above automatically registers with this template's view-area!</p>
+                <div class="info-box">
+                    <strong>✨ Magic:</strong> No <code>head-id</code> attribute needed - the head component automatically found its parent template and linked itself.
+                </div>
+            </div>
+        </template>
+        
+        <template is="view-template" view-id="about">
+            <!-- Each template can have its own head -->
+            <view-head 
+                title="About Our Company"
+                title-template="Company | %s"
+                description="Learn about our mission to make web development easier with automatic head discovery"
+                canonical="https://example.com/about"
+                og-type="website"
+                robots="index,follow">
+            </view-head>
+            
+            <div class="card">
+                <h1>ℹ️ About Us</h1>
+                <p>We're revolutionizing web development with smart components that discover and configure themselves.</p>
+                <div class="info-box">
+                    <strong>🎯 Auto Discovery:</strong> This template's head tags are automatically applied when this route is active.
+                </div>
+            </div>
+        </template>
+        
+        <template is="view-template" view-id="product">
+            <!-- Dynamic content with automatic discovery -->
+            <view-head 
+                title="Product Details"
+                title-template="Store | %s"
+                description="High-quality products with fast shipping"
+                og-type="product"
+                twitter-card="summary_large_image">
+            </view-head>
+            
+            <div class="card">
+                <h1>📦 Product Page</h1>
+                <p>Product: <strong class="product-name"></strong></p>
+                <span class="badge">In Stock</span>
+                <div class="info-box">
+                    <strong>⚡ Smart Linking:</strong> The head component automatically found this template and registered itself.
+                </div>
+            </div>
+            <script>
+                const productSlug = window.location.pathname.split('/')[2];
+                if (productSlug) {
+                    document.querySelector('.product-name').textContent = 
+                        productSlug.charAt(0).toUpperCase() + productSlug.slice(1);
+                }
+            </script>
+        </template>
+        
+        <!-- Nested dashboard templates - parent head -->
+        <template is="view-template" view-id="dashboard">
+            <!-- Parent template head -->
+            <view-head 
+                title="Dashboard"
+                title-template="Admin | %s"
+                description="Administrator dashboard"
+                robots="noindex,nofollow">
+            </view-head>
+            
+            <div class="card">
+                <h1>📊 Dashboard</h1>
+                <p>Welcome to the admin dashboard.</p>
+                <nav style="background: #f3f4f6; padding: 1rem; border-radius: 4px; margin-top: 1rem;">
+                    <a href="/dashboard/users" style="color: #6366f1;">Manage Users</a>
+                </nav>
+                <div class="info-box">
+                    <strong>🌳 Nested Head:</strong> This is a parent template. Child templates will merge their head tags with this one.
+                </div>
+            </div>
+        </template>
+        
+        <!-- Child template 1 -->
+        <template is="view-template" view-id="users-list">
+            <!-- Child template head - merges with parent -->
+            <view-head 
+                title="Users Management"
+                description="Manage user accounts and permissions">
+            </view-head>
+            
+            <div class="card">
+                <h2>👥 Users List</h2>
+                <p>Manage all user accounts here.</p>
+                <nav style="background: #f3f4f6; padding: 1rem; border-radius: 4px; margin-top: 1rem;">
+                    <a href="/dashboard/users/123" style="color: #6366f1;">View User 123</a>
+                </nav>
+                <div class="info-box">
+                    <strong>🔗 Head Merging:</strong> This child template's head merges with the parent dashboard head automatically.
+                </div>
+            </div>
+        </template>
+        
+        <!-- Child template 2 -->
+        <template is="view-template" view-id="user-profile">
+            <!-- Grandchild template head - merges with both parents -->
+            <view-head 
+                title="User Profile"
+                description="View and edit user profile information"
+                og-type="profile">
+            </view-head>
+            
+            <div class="card">
+                <h3>👤 User Profile</h3>
+                <p>User ID: <strong class="user-id"></strong></p>
+                <span class="badge">Active</span>
+                <div class="info-box">
+                    <strong>🎯 Deep Nesting:</strong> This is a 3-level nested template. All head tags from dashboard → users → user-profile are merged automatically.
+                </div>
+            </div>
+            <script>
+                const userId = window.location.pathname.split('/')[3];
+                if (userId) {
+                    document.querySelector('.user-id').textContent = userId;
+                }
+            </script>
+        </template>
+    </div>
+    
+    <!-- Debug panel to show current head tags -->
+    <div class="debug-panel">
+        <h4>🔍 Current Head Tags</h4>
+        <div><strong>Title:</strong> <span id="debug-title">Loading...</span></div>
+        <div><strong>Description:</strong> <span id="debug-description">Loading...</span></div>
+        <div><strong>OG Title:</strong> <span id="debug-og-title">Loading...</span></div>
+        <div><strong>Keywords:</strong> <span id="debug-keywords">None</span></div>
+        <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #666;">
+            Head tags update automatically as you navigate!
+        </div>
+    </div>
+    
+    <script>
+        // Debug helper to show current head tags
+        function updateDebugPanel() {
+            setTimeout(() => {
+                const title = document.querySelector('title')?.textContent || 'No title';
+                const description = document.querySelector('meta[name="description"]')?.content || 'No description';
+                const ogTitle = document.querySelector('meta[property="og:title"]')?.content || 'No OG title';
+                const keywords = document.querySelector('meta[name="keywords"]')?.content || 'None';
+                
+                document.getElementById('debug-title').textContent = title;
+                document.getElementById('debug-description').textContent = description;
+                document.getElementById('debug-og-title').textContent = ogTitle;
+                document.getElementById('debug-keywords').textContent = keywords;
+            }, 100);
+        }
+        
+        // Update debug panel when DOM changes
+        const observer = new MutationObserver(updateDebugPanel);
+        observer.observe(document.head, { childList: true, subtree: true });
+        
+        // Initial update
+        setTimeout(updateDebugPanel, 200);
+    </script>
+</body>
+</html>

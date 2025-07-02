@@ -383,11 +383,11 @@ export class CombiRouter {
   private async _navigateToURL(url: string, isPopState = false, signal?: AbortSignal): Promise<NavigationResult> {
       if(this.isNavigating) {
           return { 
-              success: false, 
-              error: { 
-                  type: 'unknown' as NavigationErrorType, 
-                  message: "Navigation already in progress" 
-              } 
+          success: false, 
+          error: { 
+          type: 'unknown' as NavigationErrorType, 
+          message: "Navigation already in progress" 
+          }
           };
       }
       
@@ -414,7 +414,7 @@ export class CombiRouter {
                   error: { 
                       type: 'route-not-found' as NavigationErrorType, 
                       message: `No route found for "${url}" and no fallback is configured.` 
-                  } 
+                  }
               };
           }
       }
@@ -422,15 +422,15 @@ export class CombiRouter {
       try {
           // Check for cancellation
           if (navAbortController.signal.aborted) {
-              this.isNavigating = false;
-              return { 
-                  success: false, 
-                  cancelled: true,
-                  error: { 
-                      type: 'cancelled' as NavigationErrorType, 
-                      message: "Navigation was cancelled" 
-                  } 
-              };
+          this.isNavigating = false;
+          return { 
+          success: false, 
+          cancelled: true,
+          error: { 
+          type: 'cancelled' as NavigationErrorType, 
+          message: "Navigation was cancelled" 
+          }
+          };
           }
 
           // Notify scroll restoration of navigation start
@@ -449,7 +449,7 @@ export class CombiRouter {
                               message: "Route guard rejected navigation",
                               route: newMatch.route,
                               params: newMatch.params
-                          } 
+                          }
                       };
                   }
                   if(typeof result === 'string') { 
@@ -473,7 +473,7 @@ export class CombiRouter {
                   error: { 
                       type: 'cancelled' as NavigationErrorType, 
                       message: "Navigation was cancelled during data loading" 
-                  } 
+                  }
               };
           }
           
@@ -520,7 +520,7 @@ export class CombiRouter {
                   error: { 
                       type: 'cancelled' as NavigationErrorType, 
                       message: "Navigation was cancelled" 
-                  } 
+                  }
               };
           }
           

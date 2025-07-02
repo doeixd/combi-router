@@ -33,13 +33,30 @@ Combi-Router is built on `@doeixd/combi-parse` for robust URL parsing and uses `
 - **Cache Tags & Invalidation**: Powerful cache management with tag-based invalidation.
 - **Global Resource State**: Centralized resource monitoring and observability.
 
+### **Composable Layer Architecture** 🧩
+- **Layer-Based Composition**: Build routers by composing independent feature layers using `makeLayered`.
+- **Built-in Layers**: Core navigation, data management, dev tools, performance, scroll restoration, transitions.
+- **User-Extensible**: Create custom layers for analytics, authentication, or any business logic.
+- **Self-Aware Layers**: Layers can call methods from previous layers for powerful orchestration.
+- **Conditional Composition**: Apply layers based on environment or feature flags.
+- **Type-Safe Extensions**: TypeScript correctly infers the final router shape across all layers.
+- **Tree-Shaking Optimized**: Only bundle the layers you actually use.
+
 ### **Modular Architecture**
-- **Tree-Shaking Optimized**: Import only what you need with granular module exports.
 - **Core Module**: Essential routing functionality (`@doeixd/combi-router/core`).
 - **Data Module**: Advanced resource and caching features (`@doeixd/combi-router/data`).
 - **Features Module**: Production optimizations (`@doeixd/combi-router/features`).
+- **Layers Module**: Composable layer system (`@doeixd/combi-router/layers`).
 - **Dev Module**: Development tools and debugging (`@doeixd/combi-router/dev`).
 - **Utils Module**: Framework-agnostic utilities (`@doeixd/combi-router/utils`).
+
+### **Integrated Layer System**
+- **Data Layer**: Advanced caching, resource management, and suspense-based data fetching.
+- **Dev Layer**: Comprehensive development tools, debugging, and performance monitoring.
+- **Performance Layer**: Intelligent prefetching, viewport-aware loading, and memory management.
+- **Scroll Restoration Layer**: Configurable scroll position management with state preservation.
+- **Transitions Layer**: Sophisticated page transitions with proper lifecycle management.
+- **Head Management Layer**: Dynamic document head management for SEO and social sharing.
 
 ### **Developer Experience**
 - **Dev Mode Warnings**: Comprehensive development-time validation and conflict detection.
@@ -795,6 +812,119 @@ if (result.success) {
 
 ## 🗂️ Advanced Features
 
+### Document Head Management
+
+The head management module provides comprehensive document head tag management with support for dynamic content, SEO optimization, and server-side rendering.
+
+#### Basic Head Management
+
+```typescript
+import { head, seoMeta } from '@doeixd/combi-router/features';
+
+// Static head data
+const aboutRoute = pipe(
+  route(path('about')),
+  head({
+    title: 'About Us',
+    meta: [
+      { name: 'description', content: 'Learn more about our company' },
+      { name: 'keywords', content: 'about, company, team' }
+    ],
+    link: [
+      { rel: 'canonical', href: 'https://example.com/about' }
+    ]
+  })
+);
+
+// Dynamic head data based on route parameters
+const userRoute = pipe(
+  route(path('users'), param('id', z.number())),
+  head(({ params }) => ({
+    title: `User Profile - ${params.id}`,
+    meta: [
+      { name: 'description', content: `Profile page for user ${params.id}` }
+    ]
+  }))
+);
+```
+
+#### SEO Optimization
+
+```typescript
+// Complete SEO setup with Open Graph and Twitter Cards
+const productRoute = pipe(
+  route(path('products'), param('id', z.number())),
+  head(({ params }) => ({
+    title: `Product ${params.id}`,
+    titleTemplate: 'Store | %s', // Results in: "Store | Product 123"
+    
+    // Basic SEO
+    ...seoMeta.basic({
+      description: `Amazing product ${params.id}`,
+      keywords: ['product', 'store', 'shopping'],
+      robots: 'index,follow'
+    }),
+    
+    // Open Graph tags
+    ...seoMeta.og({
+      title: `Product ${params.id}`,
+      description: 'The best product you will ever buy',
+      image: `https://example.com/products/${params.id}/image.jpg`,
+      url: `https://example.com/products/${params.id}`,
+      type: 'product'
+    }),
+    
+    // Twitter Cards
+    ...seoMeta.twitter({
+      card: 'summary_large_image',
+      title: `Product ${params.id}`,
+      description: 'An amazing product',
+      image: `https://example.com/products/${params.id}/twitter.jpg`
+    })
+  }))
+);
+```
+
+#### Advanced Features
+
+```typescript
+// Scripts, styles, and HTML attributes
+const dashboardRoute = pipe(
+  route(path('dashboard')),
+  head({
+    title: 'Dashboard',
+    script: [
+      { src: 'https://analytics.example.com/track.js', async: true },
+      { innerHTML: 'window.config = { theme: "dark" };' }
+    ],
+    style: [
+      { innerHTML: 'body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }' }
+    ],
+    htmlAttrs: { lang: 'en', 'data-theme': 'dark' },
+    bodyAttrs: { class: 'dashboard dark-mode' }
+  })
+);
+```
+
+#### DOM Integration
+
+```typescript
+import { HeadManager, resolveHeadData } from '@doeixd/combi-router/features';
+
+// Initialize head manager
+const headManager = new HeadManager(document);
+
+// Update head tags on navigation
+router.onNavigate((match) => {
+  if (match?.route._head) {
+    const resolvedHead = resolveHeadData(match.route._head, match);
+    headManager.apply(resolvedHead);
+  }
+});
+```
+
+For complete documentation, see [Head Management Guide](docs/head-management.md).
+
 ### Navigation Improvements
 
 #### NavigationResult with Detailed Error Handling
@@ -1120,13 +1250,33 @@ For even simpler integration, Combi-Router provides ready-to-use Web Components 
     <view-area match="/users/:id" view-id="user-detail"></view-area>
     <view-area match="/about" view-id="about-page"></view-area>
 
-    <!-- Define your templates -->
+    <!-- Define your templates with automatic head management -->
     <template is="view-template" view-id="user-detail">
+        <!-- Head automatically discovered and linked to view-area -->
+        <view-head 
+            title="User Profile"
+            title-template="My App | %s"
+            description="View user profile and details"
+            og-title="User Profile"
+            og-description="Comprehensive user profile page"
+            og-type="profile">
+        </view-head>
+        
         <h1>User Details</h1>
         <p>User ID: <span class="user-id"></span></p>
     </template>
 
     <template is="view-template" view-id="about-page">
+        <!-- Each template can have its own head configuration -->
+        <view-head 
+            title="About Us"
+            description="Learn more about our company and mission"
+            keywords="about, company, mission, team"
+            canonical="https://myapp.com/about"
+            og-title="About Our Company"
+            og-description="Discover our story and values">
+        </view-head>
+        
         <h1>About</h1>
         <p>This is the about page.</p>
     </template>
@@ -1140,11 +1290,61 @@ For even simpler integration, Combi-Router provides ready-to-use Web Components 
 </html>
 ```
 
+### Advanced Example with Nested Routes
+
+```html
+<!-- Nested route structure -->
+<view-area match="/dashboard" view-id="dashboard"></view-area>
+<view-area match="/dashboard/users" view-id="users-list"></view-area>
+<view-area match="/dashboard/users/:id" view-id="user-detail"></view-area>
+
+<!-- Templates with automatic head discovery -->
+<template is="view-template" view-id="dashboard">
+    <!-- Parent template head - automatically merges with child heads -->
+    <view-head 
+        title="Dashboard"
+        title-template="Admin | %s"
+        description="Admin dashboard overview">
+    </view-head>
+    
+    <h1>Dashboard</h1>
+    <nav>
+        <a href="/dashboard/users">Users</a>
+        <a href="/dashboard/analytics">Analytics</a>
+    </nav>
+    <main class="dashboard-content"></main>
+</template>
+
+<template is="view-template" view-id="users-list">
+    <!-- Child template head - merges with parent -->
+    <view-head 
+        title="Users"
+        description="Manage users and permissions"
+        robots="noindex">
+    </view-head>
+    
+    <h2>Users</h2>
+    <div class="users-grid"></div>
+</template>
+
+<!-- External template with dynamic head loading -->
+<template is="view-template" view-id="user-detail" src="/views/user-detail.html"></template>
+
+<!-- You can still use manual linking for external head configs -->
+<view-head head-id="external-head" src="/head-configs/user-detail.js"></view-head>
+<view-area match="/special/:id" view-id="special-view" head-id="external-head"></view-area>
+```
+
 ### Key Benefits
 
 - **Zero JavaScript Configuration**: Just import and use
 - **Declarative Routing**: Define routes in HTML attributes
 - **Automatic Navigation**: Links work out of the box
+- **SEO-Ready**: Built-in head management with Open Graph and Twitter Cards
+- **Automatic Head Discovery**: Place `view-head` inside templates - no manual linking needed
+- **Nested Head Management**: Head tags merge hierarchically for complex layouts
+- **Dynamic Content**: Load head configurations from external modules
+- **Flexible Linking**: Choose automatic discovery or manual `head-id` linking
 - **Progressive Enhancement**: Works with or without JavaScript
 - **Dynamic Route Management**: Add/remove routes programmatically when needed
 
@@ -1154,7 +1354,195 @@ For even simpler integration, Combi-Router provides ready-to-use Web Components 
 
 ## ⚙️ Configuration & API
 
-### Router Creation
+## 🧰 Composable Layer Architecture
+
+Combi-Router now features a revolutionary **layer-based composition system** using our custom `makeLayered` implementation, enabling true user extensibility while maintaining backwards compatibility.
+
+### Why Layers?
+
+Traditional routers force you to choose between their built-in features or build everything from scratch. With layers, you can:
+
+- **Mix and match** built-in features exactly as needed
+- **Create custom layers** for your specific business logic  
+- **Compose layers conditionally** based on environment or feature flags
+- **Build orchestrated systems** where layers can call each other's methods
+- **Maintain type safety** with full TypeScript inference across all layers
+
+### Basic Layer Composition
+
+```typescript
+import { 
+  createLayeredRouter, 
+  createCoreNavigationLayer,
+  withPerformance, 
+  withScrollRestoration 
+} from '@doeixd/combi-router';
+
+// Compose exactly the router you need
+const router = createLayeredRouter(routes)
+  (createCoreNavigationLayer())           // Base navigation
+  (withPerformance({ prefetchOnHover: true }))  // Performance optimizations
+  (withScrollRestoration({ strategy: 'smooth' })) // Scroll management
+  ();
+
+// All layer methods are now available
+router.navigate('/user/123');
+router.prefetchRoute('about');
+router.saveScrollPosition();
+```
+
+### Custom Layer Creation
+
+Create your own layers for analytics, authentication, or any business logic:
+
+```typescript
+const withAnalytics = (config: { trackingId: string }) => (self: any) => {
+  // Register lifecycle hooks
+  if ('_registerLifecycleHook' in self) {
+    self._registerLifecycleHook('onNavigationStart', (context: any) => {
+      console.log(`[Analytics] Navigation started: ${context.to?.path}`);
+    });
+
+    self._registerLifecycleHook('onNavigationComplete', (match: any) => {
+      console.log(`[Analytics] Page view: ${match.path}`);
+    });
+  }
+
+  return {
+    trackEvent: (event: string, data?: any) => {
+      console.log(`[Analytics] Event: ${event}`, data);
+    },
+    
+    trackError: (error: Error, context?: any) => {
+      console.log(`[Analytics] Error: ${error.message}`, context);
+    }
+  };
+};
+
+// Use your custom layer
+const router = createLayeredRouter(routes)
+  (createCoreNavigationLayer())
+  (withPerformance())
+  (withAnalytics({ trackingId: 'GA-123456-7' }))
+  ();
+
+// Your custom methods are now available
+router.trackEvent('button_click', { button: 'signup' });
+```
+
+### Layer Orchestration
+
+Layers can call methods from previously applied layers, enabling powerful composition patterns:
+
+```typescript
+const withSmartNavigation = (self: any) => ({
+  // Enhanced navigation that uses multiple layers
+  smartNavigate: async (path: string, options: any = {}) => {
+    // Track with analytics (if analytics layer is present)
+    if ('trackEvent' in self) {
+      self.trackEvent('navigation_intent', { path });
+    }
+
+    // Save scroll position (if scroll restoration layer is present)
+    if ('saveScrollPosition' in self) {
+      self.saveScrollPosition();
+    }
+
+    // Perform the navigation using core layer
+    const result = await self.navigate(path, options);
+    
+    if (result && 'trackEvent' in self) {
+      self.trackEvent('navigation_complete', { path });
+    }
+    
+    return result;
+  }
+});
+
+const router = createLayeredRouter(routes)
+  (createCoreNavigationLayer())
+  (withPerformance())
+  (withScrollRestoration())
+  (withAnalytics({ trackingId: 'GA-123' }))
+  (withSmartNavigation)  // Orchestrates all previous layers
+  ();
+
+// One method that uses multiple layer capabilities
+router.smartNavigate('/dashboard');
+```
+
+### Conditional Layer Application
+
+Apply layers based on environment, feature flags, or any condition:
+
+```typescript
+import { conditionalLayer } from '@doeixd/combi-router';
+
+const isDev = process.env.NODE_ENV === 'development';
+const isProd = process.env.NODE_ENV === 'production';
+const hasAnalytics = config.features.analytics;
+
+const router = createLayeredRouter(routes)
+  (createCoreNavigationLayer())
+  
+  // Only add performance layer in production
+  (conditionalLayer(isProd, withPerformance({
+    prefetchOnHover: true,
+    enablePerformanceMonitoring: true
+  })))
+  
+  // Only add debug layer in development
+  (conditionalLayer(isDev, (self: any) => ({
+    debug: () => console.log('Router state:', self.currentMatch),
+    logAllNavigation: true
+  })))
+  
+  // Conditional analytics
+  (conditionalLayer(hasAnalytics, withAnalytics({ 
+    trackingId: config.analytics.trackingId 
+  })))
+  ();
+```
+
+### Built-in Layer Types
+
+- **Core Navigation** (`createCoreNavigationLayer`): Essential routing functionality
+- **Performance** (`withPerformance`): Prefetching, monitoring, memory management
+- **Scroll Restoration** (`withScrollRestoration`): Automatic scroll position management
+- **Transitions** (`withTransitions`): Smooth page transitions
+- **Code Splitting** (`withCodeSplitting`): Dynamic route loading
+
+### Migration from Configuration-Based Approach
+
+**⚠️ Deprecation Notice**: The configuration-based feature system (`RouterOptions.features`) is deprecated in favor of the new layer system. The old API continues to work but will be removed in the next major version.
+
+```typescript
+// ❌ Old way (deprecated)
+const router = new CombiRouter(routes, {
+  features: {
+    performance: { prefetchOnHover: true },
+    scrollRestoration: { strategy: 'smooth' }
+  }
+});
+
+// ✅ New way (recommended)
+const router = createLayeredRouter(routes)
+  (createCoreNavigationLayer())
+  (withPerformance({ prefetchOnHover: true }))
+  (withScrollRestoration({ strategy: 'smooth' }))
+  ();
+```
+
+The new layer system provides:
+- **Better tree-shaking**: Only bundle layers you use
+- **User extensibility**: Create custom layers for your needs
+- **Better composition**: Mix and match features freely
+- **Type safety**: Full TypeScript inference across layers
+- **Self-aware layers**: Layers can interact with each other
+
+### Router Creation (Legacy)
+
+For backwards compatibility, the traditional configuration-based approach still works:
 
 ```typescript
 const router = createRouter(
@@ -1162,6 +1550,9 @@ const router = createRouter(
   {
     baseURL: 'https://myapp.com', // For running in a subdirectory
     hashMode: false, // Use `/#/path` style URLs
+    features: { // ⚠️ Deprecated - use layer system instead
+      performance: { prefetchOnHover: true }
+    }
   }
 );
 ```
@@ -1250,6 +1641,169 @@ router.onError(({ error, to, from }) => {
 - `NavigationController`: Interface for managing ongoing navigation.
 - `GuardContext<TParams>`: Context object passed to typed guard functions.
 - `TypedRouteGuard<TParams>`: Type for typed guard functions.
+
+<br />
+
+## 🏗️ Layered Router Architecture
+
+### Creating Layered Routers
+
+The layered router architecture allows you to compose routers from independent, reusable layers:
+
+```typescript
+import { 
+  createLayeredRouter, 
+  dataLayer, 
+  devLayer, 
+  performanceLayer 
+} from '@doeixd/combi-router';
+
+// Basic layered router
+const router = createLayeredRouter(routes)
+  (dataLayer())     // Add data management capabilities
+  (devLayer())      // Add development tools (dev mode only)
+  ();               // Finalize the router
+
+// Advanced configuration
+const advancedRouter = createLayeredRouter(routes, {
+  baseURL: '/app',
+  hashMode: false
+})
+  (dataLayer({
+    autoCleanup: true,
+    cleanupInterval: 300000,
+    logResourceEvents: true
+  }))
+  (devLayer({
+    exposeToWindow: true,
+    autoAnalyze: true,
+    performanceMonitoring: true
+  }))
+  (performanceLayer({
+    prefetchOnHover: true,
+    prefetchViewport: true,
+    connectionAware: true
+  }))
+  ();
+```
+
+### Data Layer Features
+
+The data layer provides advanced data management capabilities:
+
+```typescript
+// Access data layer features
+const router = createLayeredRouter(routes)(dataLayer())();
+
+// Advanced caching with tags
+router.cache.set('user:123', userData, {
+  ttl: 300000,
+  invalidateOn: ['user', 'profile'],
+  priority: 'high'
+});
+
+// Create suspense-compatible resources
+const userResource = router.createResource(() => 
+  fetch(`/api/users/${params.id}`).then(r => r.json())
+);
+
+// Advanced resources with retry and caching
+const advancedResource = router.createAdvancedResource(
+  () => api.fetchUser(userId),
+  {
+    retry: { attempts: 3 },
+    cache: { ttl: 300000, invalidateOn: ['user'] },
+    staleTime: 60000,
+    backgroundRefetch: true
+  }
+);
+
+// Global resource monitoring
+const globalState = router.getGlobalResourceState();
+if (globalState.isLoading) {
+  showLoadingSpinner();
+}
+
+// Cache invalidation
+router.invalidateByTags(['user', 'profile']);
+
+// Route preloading
+router.preloadRoute('user-dashboard', { id: userId });
+```
+
+### Development Layer Features
+
+The development layer provides comprehensive debugging and development tools:
+
+```typescript
+// Access dev tools (development mode only)
+const router = createLayeredRouter(routes)(devLayer())();
+
+// Run comprehensive analysis
+router.runDevAnalysis();
+
+// Get detailed development report
+const report = router.getDevReport();
+console.log(`Performance score: ${report.performance?.score}/100`);
+console.log(`Found ${report.warnings.length} warnings`);
+
+// Log formatted report
+router.logDevReport();
+
+// Export debug data
+const debugData = router.exportDevData();
+localStorage.setItem('router-debug', debugData);
+
+// Access via window (if exposeToWindow: true)
+window.combiRouterDev?.analyze();
+window.combiRouterDev?.report();
+```
+
+### Quick Setup Functions
+
+For common use cases, use the quick setup functions:
+
+```typescript
+import { quickDataLayer, quickDevLayer } from '@doeixd/combi-router';
+
+// Production-ready setup
+const router = createLayeredRouter(routes)
+  (quickDataLayer())  // Optimized data management
+  (quickDevLayer())   // All dev tools (dev mode only)
+  ();
+
+// Equivalent to full configuration
+const router = createLayeredRouter(routes)
+  (dataLayer({
+    autoCleanup: true,
+    cleanupInterval: 300000,
+    logResourceEvents: process.env.NODE_ENV !== 'production'
+  }))
+  (devLayer({
+    exposeToWindow: true,
+    autoAnalyze: true,
+    warnings: true,
+    conflictDetection: true,
+    performanceMonitoring: true,
+    routeValidation: true,
+    debugMode: true
+  }))
+  ();
+```
+
+### Backwards Compatibility
+
+The new layered system is fully backwards compatible:
+
+```typescript
+// Original API still works
+const router = new CombiRouter(routes, options);
+
+// Automatically includes:
+// - Data layer for resource management
+// - Dev layer in development mode
+// - All existing functionality
+```
 
 <br />
 

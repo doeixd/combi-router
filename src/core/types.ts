@@ -233,6 +233,17 @@ export interface ProductionFeatures {
   codeSplitting?: CodeSplittingConfig;
   transitions?: TransitionConfig;
   performance?: PerformanceConfig;
+  head?: HeadManagementConfig;
+}
+
+export interface HeadManagementConfig {
+  titleTemplate?: string;
+  defaultTitle?: string;
+  enableOpenGraph?: boolean;
+  enableTwitterCard?: boolean;
+  enableCanonical?: boolean;
+  baseUrl?: string;
+  preserveExisting?: boolean;
 }
 
 // Forward declarations for production features
@@ -277,6 +288,14 @@ export interface TransitionContext {
   direction: 'forward' | 'back' | 'replace';
   isInitial: boolean;
   element?: Element;
+}
+
+export interface NavigationContext {
+  readonly from: RouteMatch<any> | null;
+  readonly to: RouteMatch<any> | null;
+  readonly isPopState: boolean;
+  readonly controller: NavigationController | null;
+  readonly options?: any;
 }
 
 export interface PerformanceConfig {
@@ -337,11 +356,15 @@ export interface NavigationResult {
 
 /** Controller for managing ongoing navigation */
 export interface NavigationController {
-  readonly route: Route<any>;
-  readonly params: any;
+  readonly id?: number;  // Optional id for tracking concurrent navigations
+  readonly url?: string;
+  readonly route?: Route<any>;
+  readonly params?: any;
   readonly promise: Promise<NavigationResult>;
   cancel(): void;
   readonly cancelled: boolean;
+  readonly isPopState?: boolean;
+  readonly startTime?: number;
 }
 
 /** Context provided to typed guards */

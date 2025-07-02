@@ -10,6 +10,7 @@ export * from './scroll-restoration';
 export * from './code-splitting';
 export * from './transitions';
 export * from './performance';
+export * from './head';
 
 // Feature configuration interfaces
 export interface ProductionFeatures {
@@ -17,6 +18,7 @@ export interface ProductionFeatures {
   codeSplitting?: import('./code-splitting').CodeSplittingConfig;
   transitions?: import('./transitions').TransitionConfig;
   performance?: import('./performance').PerformanceConfig;
+  head?: import('./head').HeadInput;
 }
 
 // Re-export main interfaces for convenience
@@ -48,3 +50,15 @@ export type {
   ResourcePriority,
   MemoryManagementConfig
 } from './performance';
+
+export type {
+  HeadInput,
+  HeadFunction,
+  HeadTag,
+  MetaTag,
+  LinkTag,
+  ScriptTag,
+  StyleTag,
+  TitleTemplate,
+  ResolvedHeadData
+} from './head';

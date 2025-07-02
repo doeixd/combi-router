@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Combi-Router Web Components with Head Management</title>
+    
+    <script type="module">
+        // Import the standalone components
+        import '@doeixd/combi-router/components-standalone';
+        
+        // Optional: Listen for route changes
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const router = window.myAppRouter;
+                if (router) {
+                    router.subscribe((match) => {
+                        console.log('Route changed:', match);
+                    });
+                }
+            }, 100);
+        });
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        nav {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        nav a {
+            margin-right: 1rem;
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        nav a:hover {
+            text-decoration: underline;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .user-card, .product-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+        }
+        
+        .badge {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+        
+        .meta-info {
+            background: #f3f4f6;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Combi-Router Web Components Demo</h1>
+        <p>This demo shows how to use combi-router web components with built-in head management for SEO.</p>
+        
+        <!-- Navigation -->
+        <nav>
+            <a href="/">Home</a>
+            <a href="/about">About</a>
+            <a href="/users/123">User 123</a>
+            <a href="/users/456">User 456</a>
+            <a href="/products/laptop">Laptop</a>
+            <a href="/products/phone">Phone</a>
+            <a href="/blog/getting-started">Blog Post</a>
+        </nav>
+        
+        <!-- Route Areas -->
+        <main>
+            <!-- Home route -->
+            <view-area match="/" view-id="home" head-id="home-head"></view-area>
+            
+            <!-- About route -->
+            <view-area match="/about" view-id="about" head-id="about-head"></view-area>
+            
+            <!-- User routes -->
+            <view-area match="/users/:id" view-id="user-detail" head-id="user-head"></view-area>
+            
+            <!-- Product routes -->
+            <view-area match="/products/:slug" view-id="product-detail" head-id="product-head"></view-area>
+            
+            <!-- Blog routes -->
+            <view-area match="/blog/:slug" view-id="blog-post" head-id="blog-head"></view-area>
+        </main>
+        
+        <!-- Templates -->
+        <template is="view-template" view-id="home">
+            <div class="user-card">
+                <h1>🏠 Welcome Home</h1>
+                <p>This is the home page of our demo application built with Combi-Router web components.</p>
+                <div class="meta-info">
+                    Check the page title and meta tags - they're automatically managed by the view-head component!
+                </div>
+            </div>
+        </template>
+        
+        <template is="view-template" view-id="about">
+            <div class="user-card">
+                <h1>ℹ️ About Us</h1>
+                <p>We're a company that builds amazing web applications using modern routing techniques.</p>
+                <p>Our mission is to make web development simpler and more enjoyable.</p>
+                <div class="meta-info">
+                    This page has custom SEO tags including Open Graph and Twitter Cards.
+                </div>
+            </div>
+        </template>
+        
+        <template is="view-template" view-id="user-detail">
+            <div class="user-card">
+                <h1>👤 User Profile</h1>
+                <p>User ID: <strong class="user-id-display"></strong></p>
+                <span class="badge">Active User</span>
+                <div class="meta-info">
+                    The page title and meta description are dynamically generated based on the user ID from the URL.
+                </div>
+            </div>
+            <script>
+                // Simple way to populate dynamic content
+                const urlParams = new URL(window.location).pathname.split('/');
+                const userId = urlParams[urlParams.indexOf('users') + 1];
+                if (userId) {
+                    document.querySelector('.user-id-display').textContent = userId;
+                }
+            </script>
+        </template>
+        
+        <template is="view-template" view-id="product-detail">
+            <div class="product-card">
+                <h1>📦 Product Details</h1>
+                <p>Product: <strong class="product-name-display"></strong></p>
+                <span class="badge">In Stock</span>
+                <div class="meta-info">
+                    Product pages have rich SEO metadata including structured data for e-commerce.
+                </div>
+            </div>
+            <script>
+                const urlParams = new URL(window.location).pathname.split('/');
+                const productSlug = urlParams[urlParams.indexOf('products') + 1];
+                if (productSlug) {
+                    document.querySelector('.product-name-display').textContent = 
+                        productSlug.charAt(0).toUpperCase() + productSlug.slice(1);
+                }
+            </script>
+        </template>
+        
+        <template is="view-template" view-id="blog-post">
+            <div class="user-card">
+                <h1>📝 Blog Post</h1>
+                <p>Article: <strong class="blog-title-display"></strong></p>
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+                <div class="meta-info">
+                    Blog posts include article-specific SEO tags and structured data for rich snippets.
+                </div>
+            </div>
+            <script>
+                const urlParams = new URL(window.location).pathname.split('/');
+                const blogSlug = urlParams[urlParams.indexOf('blog') + 1];
+                if (blogSlug) {
+                    document.querySelector('.blog-title-display').textContent = 
+                        blogSlug.split('-').map(word => 
+                            word.charAt(0).toUpperCase() + word.slice(1)
+                        ).join(' ');
+                }
+            </script>
+        </template>
+        
+        <!-- Head Configurations -->
+        
+        <!-- Home page head -->
+        <view-head 
+            head-id="home-head"
+            title="Welcome to Our App"
+            description="The best web application built with modern routing technology"
+            keywords="web app, routing, spa, modern"
+            canonical="https://myapp.com/"
+            og-title="Welcome to Our Amazing App"
+            og-description="Experience the future of web applications"
+            og-image="https://myapp.com/images/home-og.jpg"
+            og-url="https://myapp.com/"
+            twitter-title="Our Amazing App"
+            twitter-description="The best web app you'll ever use"
+            twitter-image="https://myapp.com/images/home-twitter.jpg">
+        </view-head>
+        
+        <!-- About page head -->
+        <view-head 
+            head-id="about-head"
+            title="About Us"
+            title-template="MyApp | %s"
+            description="Learn about our company, mission, and the team behind our innovative web application"
+            keywords="about, company, team, mission, vision"
+            canonical="https://myapp.com/about"
+            og-title="About Our Company"
+            og-description="Discover our story, mission, and the passionate team building the future of web apps"
+            og-type="website"
+            og-image="https://myapp.com/images/about-team.jpg"
+            twitter-card="summary_large_image"
+            twitter-title="About Our Team"
+            twitter-description="Meet the people building amazing web experiences">
+        </view-head>
+        
+        <!-- User detail head - uses external module for dynamic content -->
+        <view-head head-id="user-head" src="./head-configs/user-detail.js"></view-head>
+        
+        <!-- Product detail head -->
+        <view-head 
+            head-id="product-head"
+            title="Product Details"
+            title-template="Store | %s"
+            description="High-quality products with fast shipping and excellent customer service"
+            og-type="product"
+            twitter-card="summary_large_image">
+        </view-head>
+        
+        <!-- Blog post head -->
+        <view-head 
+            head-id="blog-head"
+            title="Blog Article"
+            title-template="Blog | %s"
+            description="Read our latest insights, tutorials, and industry updates"
+            og-type="article"
+            twitter-card="summary_large_image">
+        </view-head>
+    </div>
+    
+    <!-- Debug panel to show current head tags -->
+    <div style="position: fixed; bottom: 20px; right: 20px; background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); max-width: 300px; font-size: 0.875rem;">
+        <strong>Current Page Head Tags:</strong>
+        <div id="debug-title"></div>
+        <div id="debug-description"></div>
+        <div id="debug-og-title"></div>
+    </div>
+    
+    <script>
+        // Debug helper to show current head tags
+        function updateDebugPanel() {
+            const title = document.querySelector('title')?.textContent || 'No title';
+            const description = document.querySelector('meta[name="description"]')?.content || 'No description';
+            const ogTitle = document.querySelector('meta[property="og:title"]')?.content || 'No OG title';
+            
+            document.getElementById('debug-title').innerHTML = `<strong>Title:</strong> ${title}`;
+            document.getElementById('debug-description').innerHTML = `<strong>Description:</strong> ${description}`;
+            document.getElementById('debug-og-title').innerHTML = `<strong>OG Title:</strong> ${ogTitle}`;
+        }
+        
+        // Update debug panel when DOM changes
+        const observer = new MutationObserver(updateDebugPanel);
+        observer.observe(document.head, { childList: true, subtree: true });
+        
+        // Initial update
+        setTimeout(updateDebugPanel, 100);
+    </script>
+</body>
+</html>

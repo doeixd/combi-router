@@ -58,7 +58,7 @@ export interface ActiveLinkOptions extends LinkOptions {
  * // Later, when the element is removed from the DOM:
  * // destroy();
  */
-export function createLink<T>(
+export function createLink<T extends Record<string, any>>(
   router: CombiRouter,
   route: Route<T>,
   params: T,
@@ -111,7 +111,7 @@ export function createLink<T>(
  *   activeClassName: 'font-bold' // This class is applied when on /dashboard or /dashboard/users
  * });
  */
-export function createActiveLink<T>(
+export function createActiveLink<T extends Record<string, any>>(
   router: CombiRouter,
   route: Route<T>,
   params: T,
@@ -162,7 +162,7 @@ export function createActiveLink<T>(
  * const myButton = document.getElementById('my-button');
  * const { destroy } = attachNavigator(myButton, router, homeRoute, {});
  */
-export function attachNavigator<T>(
+export function attachNavigator<T extends Record<string, any>>(
   element: HTMLElement,
   router: CombiRouter,
   route: Route<T>,
@@ -344,12 +344,10 @@ export function createRouterStore(router: CombiRouter): RouterStore {
   const unsubscribeMatch = router.subscribe(update);
   
   // To accurately track isNavigating/isFetching, we need to tap into the
-  // navigation lifecycle. The easiest way is to wrap the router's navigate method.
-  // A more advanced router might provide `onNavStart` and `onNavEnd` events.
+  // navigation lifecycle. The router's getters should automatically reflect these states.
   const originalNavigate = router.navigate; // Store the original function reference
   (router as any).navigate = async (...args: any[]) => { // Overwrite with a wrapper
-      // Set navigating state to true and immediately update the store.
-      router.isNavigating = true;
+      // Update the store when navigation starts
       update();
       try {
           // Call the original function using .call or .apply to maintain `this` context if necessary,
@@ -357,9 +355,7 @@ export function createRouterStore(router: CombiRouter): RouterStore {
           // However, since it's a class method, direct call on the instance should be fine.
           return await originalNavigate.apply(router, args as any);
       } finally {
-          // Once navigation completes (or fails), set state back to false and update.
-          router.isNavigating = false;
-          router.isFetching = false; // isFetching is reset at the end of nav
+          // Once navigation completes (or fails), update the store again
           update();
       }
   };

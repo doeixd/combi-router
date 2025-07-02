@@ -56,8 +56,20 @@ export { Route, route, extend, pipe } from './core/route';
 // Route matchers
 export { path, param, query, end } from './core/matchers';
 
-// Router class and factory
-export { CombiRouter, createRouter } from './core/router';
+// Router class and factory (backwards compatible - uses layered implementation)
+export { CombiRouter, createRouter } from './core/router-compat';
+
+// New composable API exports
+export {
+  createLayeredRouter,
+  createComposableRouter,
+  conditionalLayer,
+  identityLayer,
+  makeLayered
+} from './core/layered-router';
+
+// Layer system exports
+export * from './layers';
 
 // Guards
 export { guard, typedGuard } from './core/guards';
