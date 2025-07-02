@@ -1,3 +1,4 @@
+/// <reference types="vitest/globals" />
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'; // Ensure all vitest globals are imported
 import {
   createRouter,
@@ -112,9 +113,9 @@ const setupMockEnvironment = () => {
 
   // @ts-ignore
   global.document = {
-    startViewTransition: mockStartViewTransition,
+    startViewTransition: mockStartViewTransition as any,
     // Add other necessary document properties if router interacts with them
-  };
+  } as any;
 
   // @ts-ignore
   global.window = {
@@ -130,11 +131,10 @@ const setupMockEnvironment = () => {
     location: {
       pathname: '/', search: '', hash: '', assign: vi.fn(), reload: vi.fn(), replace: vi.fn(), href: 'http://localhost/',
       origin: 'http://localhost', protocol: 'http:', host: 'localhost', hostname: 'localhost',
-    },
+    } as any,
     dispatchEvent: vi.fn(),
-    navigator: { onLine: true },
+    navigator: { onLine: true } as any,
     URL: URL, 
-    document: global.document, 
     setTimeout: setTimeout,
     clearTimeout: clearTimeout,
     requestAnimationFrame: (cb) => setTimeout(cb, 0), 
@@ -145,12 +145,12 @@ const setupMockEnvironment = () => {
       // @ts-ignore
     global.document = {
       startViewTransition: vi.fn(cb => { cb(); return { ready: Promise.resolve(), finished: Promise.resolve(), updateCallbackDone: Promise.resolve(), skipTransition: vi.fn() }; }),
-    };
+    } as any;
   } else {
      // @ts-ignore
     if(!global.document.startViewTransition) {
         // @ts-ignore
-        global.document.startViewTransition = vi.fn(cb => { cb(); return { ready: Promise.resolve(), finished: Promise.resolve(), updateCallbackDone: Promise.resolve(), skipTransition: vi.fn() }; });
+        global.document.startViewTransition = vi.fn(cb => { cb(); return { ready: Promise.resolve(), finished: Promise.resolve(), updateCallbackDone: Promise.resolve(), skipTransition: vi.fn() }; }) as any;
     }
   }
   return { mockPushState: mockPushStateImpl, mockReplaceState: mockReplaceStateImpl, mockAddEventListener, mockRemoveEventListener };

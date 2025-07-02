@@ -1,3 +1,4 @@
+/// <reference types="vitest/globals" />
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   createRouter,
@@ -110,7 +111,7 @@ describe('CombiRouter Advanced Features', () => {
          assign: vi.fn(),
          reload: vi.fn(),
          replace: vi.fn(),
-      };
+      } as any;
       global.window.addEventListener = vi.fn();
       global.window.removeEventListener = vi.fn();
       // @ts-ignore
@@ -154,7 +155,7 @@ describe('CombiRouter Advanced Features', () => {
   afterEach(() => {
     if (global.window && originalHistory && originalLocation) {
       global.window.history = originalHistory;
-      global.window.location = originalLocation;
+      global.window.location = originalLocation as any;
     }
     vi.restoreAllMocks();
   });

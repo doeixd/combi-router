@@ -1,3 +1,5 @@
+/// <reference types="vitest/globals" />
+/// <reference types="vitest" />
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { JSDOM } from 'jsdom';
 import {
@@ -64,6 +66,7 @@ describe('CombiRouter Utilities (src/utils.ts)', () => {
     document = dom.window.document;
 
     // Make window and document global for tests
+    // @ts-expect-error - JSDOM window type compatibility
     global.window = window;
     global.document = document;
     global.HTMLElement = dom.window.HTMLElement;
@@ -99,7 +102,9 @@ describe('CombiRouter Utilities (src/utils.ts)', () => {
     delete global.cancelAnimationFrame;
     
     // Close JSDOM window if it was created and window is still the JSDOM window
+    // @ts-expect-error - JSDOM window type compatibility
     if (dom && dom.window && typeof dom.window.close === 'function' && global.window === dom.window) {
+      // @ts-expect-error - JSDOM window type compatibility
       dom.window.close();
     }
 
@@ -136,7 +141,7 @@ describe('CombiRouter Utilities (src/utils.ts)', () => {
     router.navigate = vi.fn().mockResolvedValue(true);
     router.build = vi.fn((routeToDo, paramsToBuild) => {
         // Simple build mock: /routePathname?param1=value1
-        let path = routeToDo.matchers.filter(m => m.type === 'path' || m.type === 'param').reduce((acc, m) => {
+        let path = routeToDo.matchers.filter((m: any) => m.type === 'path' || m.type === 'param').reduce((acc: any, m: any) => {
             if (m.type === 'path') return acc + m.build({}); // Static path parts
             if (m.paramName && paramsToBuild[m.paramName]) return acc + `/${paramsToBuild[m.paramName]}`;
             return acc;
@@ -286,7 +291,7 @@ describe('CombiRouter Utilities (src/utils.ts)', () => {
       expect(element.classList.contains('active-route')).toBe(false);
 
       // Simulate route change by manually calling the listener router.subscribe passed
-      const subscribeCall = (mockRouter.subscribe as vi.Mock).mock.calls[0];
+      const subscribeCall = (mockRouter.subscribe as any).mock.calls[0];
       const routeChangeListener = subscribeCall[0] as (match: RouteMatch | null) => void;
       
       const homeMatch: RouteMatch = { route: homeRoute, params: {}, pathname: '/home', search:'', hash:'' };
@@ -300,7 +305,7 @@ describe('CombiRouter Utilities (src/utils.ts)', () => {
     it('destroy function should unsubscribe from router', () => {
       const mockRouter = createMockRouter();
       const mockUnsubscribe = vi.fn();
-      (mockRouter.subscribe as vi.Mock).mockReturnValue(mockUnsubscribe); // Ensure subscribe returns our mock unsubscribe
+      (mockRouter.subscribe as any).mockReturnValue(mockUnsubscribe); // Ensure subscribe returns our mock unsubscribe
 
       const { destroy } = createActiveLink(mockRouter, homeRoute, {}, { activeClassName: 'active' });
       destroy();
@@ -415,7 +420,7 @@ describe('CombiRouter Utilities (src/utils.ts)', () => {
         [appUserRoute, viewFactoryUser],
       ]);
 
-      const subscribeCall = (mockRouter.subscribe as vi.Mock).mock.calls[0];
+      const subscribeCall = (mockRouter.subscribe as any).mock.calls[0];
       const routeChangeListener = subscribeCall[0] as (match: RouteMatch | null) => void;
 
       // Simulate navigate to home
@@ -451,7 +456,7 @@ describe('CombiRouter Utilities (src/utils.ts)', () => {
         createOutlet(mockRouter, appRoute, outletContainer, [[appHomeRoute, viewFactoryHome]]);
         expect(outletContainer.querySelector('#home-view')).not.toBeNull();
 
-        const subscribeCall = (mockRouter.subscribe as vi.Mock).mock.calls[0];
+        const subscribeCall = (mockRouter.subscribe as any).mock.calls[0];
         const routeChangeListener = subscribeCall[0] as (match: RouteMatch | null) => void;
 
         // Simulate navigating to a state where parent matches but no configured child for outlet
@@ -464,7 +469,7 @@ describe('CombiRouter Utilities (src/utils.ts)', () => {
         mockRouter = createMockRouter(null); // Not on appRoute
         createOutlet(mockRouter, appRoute, outletContainer, [[appHomeRoute, viewFactoryHome]]);
         
-        const subscribeCall = (mockRouter.subscribe as vi.Mock).mock.calls[0];
+        const subscribeCall = (mockRouter.subscribe as any).mock.calls[0];
         const routeChangeListener = subscribeCall[0] as (match: RouteMatch | null) => void;
 
         const otherRoute = route(path('other'),end);
@@ -478,7 +483,7 @@ describe('CombiRouter Utilities (src/utils.ts)', () => {
     it('destroy function should unsubscribe from router', () => {
       const mockUnsubscribe = vi.fn();
       mockRouter = createMockRouter(null);
-      (mockRouter.subscribe as vi.Mock).mockReturnValue(mockUnsubscribe);
+      (mockRouter.subscribe as any).mockReturnValue(mockUnsubscribe);
       
       const { destroy } = createOutlet(mockRouter, appRoute, outletContainer, []);
       destroy();
@@ -507,7 +512,7 @@ describe('CombiRouter Utilities (src/utils.ts)', () => {
       
       cbOtherwise.mockClear(); // Clear the initial call from subscribe()
 
-      const subscribeCall = (mockRouter.subscribe as vi.Mock).mock.calls[0][0];
+      const subscribeCall = (mockRouter.subscribe as any).mock.calls[0][0];
       
       const homeMatch: RouteMatch = { route: homeRoute, params: {}, pathname: '/home', search:'', hash:'' };
       subscribeCall(homeMatch);
@@ -528,7 +533,7 @@ describe('CombiRouter Utilities (src/utils.ts)', () => {
         .when(homeRoute, cbHome)
         .otherwise(cbOtherwise);
       
-      const subscribeCall = (mockRouter.subscribe as vi.Mock).mock.calls[0][0];
+      const subscribeCall = (mockRouter.subscribe as any).mock.calls[0][0];
       const aboutMatch: RouteMatch = { route: aboutRoute, params: {}, pathname: '/about', search:'', hash:'' };
       subscribeCall(aboutMatch); // aboutRoute is not in .when()
 
@@ -541,7 +546,7 @@ describe('CombiRouter Utilities (src/utils.ts)', () => {
         .when(homeRoute, cbHome)
         .otherwise(cbOtherwise);
       
-      const subscribeCall = (mockRouter.subscribe as vi.Mock).mock.calls[0][0];
+      const subscribeCall = (mockRouter.subscribe as any).mock.calls[0][0];
       subscribeCall(null); // Simulate no match
 
       expect(cbOtherwise).toHaveBeenCalledWith(null);
@@ -550,7 +555,7 @@ describe('CombiRouter Utilities (src/utils.ts)', () => {
 
     it('destroy function from otherwise() should unsubscribe', () => {
       const mockUnsubscribe = vi.fn();
-      (mockRouter.subscribe as vi.Mock).mockReturnValue(mockUnsubscribe);
+      (mockRouter.subscribe as any).mockReturnValue(mockUnsubscribe);
 
       const { destroy } = createMatcher(mockRouter).otherwise(() => {});
       destroy();
@@ -595,7 +600,7 @@ describe('CombiRouter Utilities (src/utils.ts)', () => {
       mockRouter.currentMatch = { route: userRoute, params: {id:'1'}, pathname: '/users/1', search:'', hash:'' };
       
       // Manually call the update function that router's subscribe would trigger in the store
-      const routerSubscribeCall = (mockRouter.subscribe as vi.Mock);
+      const routerSubscribeCall = (mockRouter.subscribe as any);
       // The store's internal update function is what's passed to router.subscribe().
       // We need to find that specific listener.
       // This is a bit of an integration test due to the tight coupling.
@@ -653,7 +658,7 @@ describe('CombiRouter Utilities (src/utils.ts)', () => {
       expect(wrappedNavigate.constructor.name).toBe('AsyncFunction');
 
       // 4. Call destroy
-      if (store.destroy) store.destroy();
+      if ((store as any).destroy) (store as any).destroy();
 
       // 5. Assert that cleanRouter.navigate is restored to the truly original navigate
       expect(cleanRouter.navigate).toBe(trulyOriginalNav);
