@@ -1,5 +1,5 @@
 // Test script to debug layered router behavior
-const allExports = require('./dist/cjs/development/index.js');
+const allExports = require('../dist/cjs/development/index.js');
 console.log('Available exports:', Object.keys(allExports));
 
 const { createLayeredRouter, createCoreNavigationLayer, route, path } = allExports;
