@@ -17,29 +17,29 @@ Combi-Router is built on `@doeixd/combi-parse` for robust URL parsing and uses `
 <br />
 
 ## ✨ Key Features
-> 🔗 **Type-Safe & Composable**  
->  Build routes functionally and compose them by reference for perfect type safety and effortless refactoring.
->
-> 🌳 **Hierarchical & Introspective**  
-> Routes create natural trees that mirror your app's structure, with built-in utilities to analyze the hierarchy.
->
-> ⚡ **Powerful Data Loading**  
->  Run data loaders for nested routes in parallel, with an advanced resource system featuring Suspense, caching, retries, and invalidation.
->
-> 🧩 **Composable Layer Architecture**  
->  Build your ideal router by mixing and matching feature layers (data, performance, dev tools) or creating your own.
->
-> 🛡️ **Advanced Navigation & Guards**  
->  Navigate with detailed results, cancellation support, and robust, type-safe route guards for fine-grained access control.
->
-> 🔎 **Integrated SEO & Head Management**  
->  Dynamically manage document head tags, including titles, meta descriptions, and social cards, directly from your route definitions.
->
-> ✂️ **Tree-Shakeable & Modular**  
->  A modular design ensures you only bundle the features you use, keeping your app lean and fast.
->
-> 🛠️ **Superior Developer Experience**  
->  Get dev-mode warnings, advanced debugging utilities, and detailed route analysis right out of the box.
+&nbsp;&nbsp;🔗 **Type-Safe & Composable**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Build routes functionally and compose them by reference for perfect type safety and effortless refactoring.
+
+&nbsp;&nbsp;🌳 **Hierarchical & Introspective**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Routes create natural trees that mirror your app's structure, with built-in utilities to analyze the hierarchy.
+
+&nbsp;&nbsp;⚡ **Powerful Data Loading**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Run data loaders for nested routes in parallel, with an advanced resource system featuring Suspense, caching, retries, and invalidation.
+
+&nbsp;&nbsp;🧩 **Composable Layer Architecture**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Build your ideal router by mixing and matching feature layers (data, performance, dev tools) or creating your own.
+
+&nbsp;&nbsp; 🛡️ **Advanced Navigation & Guards**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Navigate with detailed results, cancellation support, and robust, type-safe route guards for fine-grained access control.
+
+&nbsp;&nbsp;🔎 **Integrated SEO & Head Management**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Dynamically manage document head tags, including titles, meta descriptions, and social cards, directly from your route definitions.
+
+&nbsp;&nbsp; ✂️ **Tree-Shakeable & Modular**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; A modular design ensures you only bundle the features you use, keeping your app lean and fast.
+
+&nbsp;&nbsp; 🛠️ **Superior Developer Experience**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Get dev-mode warnings, advanced debugging utilities, and detailed route analysis right out of the box.
 
 
 
