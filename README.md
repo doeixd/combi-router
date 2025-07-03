@@ -18,6 +18,23 @@ Combi-Router is built on `@doeixd/combi-parse` for robust URL parsing and uses `
 
 ## ✨ Key Features
 
+  🔗 **Type-Safe & Composable:** Build routes functionally and compose them by reference for perfect type safety and effortless refactoring.
+  
+  🌳 **Hierarchical & Introspective:** Routes create natural trees that mirror your app's structure, with built-in utilities to analyze the hierarchy.
+  
+  ⚡ **Powerful Data Loading:** Run data loaders for nested routes in parallel, with an advanced resource system featuring Suspense, caching, retries, and invalidation.
+
+  🧩 **Composable Layer Architecture:** Build your ideal router by mixing and matching feature layers (data, performance, dev tools) or creating your own.
+  
+  ✂️ **Tree-Shakeable & Modular:** A modular design ensures you only bundle the features you use, keeping your app lean and fast.
+  
+  🚀 **Production Ready:** Includes intelligent prefetching, scroll restoration, memory management, and automatic support for the native View Transitions API.
+  
+  🛠️ **Superior Developer Experience:** Get dev-mode warnings, advanced debugging utilities, and detailed route analysis right out of the box.
+  
+  🌐 **Framework Agnostic:** Works seamlessly with any framework (React, Vue, Svelte) or vanilla JS, including a set of ready-to-use helpers and Web Components.
+
+<!--
 ### **Core Routing**
 - **Reference-Based Navigation**: Navigate using route objects for perfect type safety.
 - **Functional Composition**: Build routes by composing pure functions instead of method chaining.
@@ -76,6 +93,8 @@ Combi-Router is built on `@doeixd/combi-parse` for robust URL parsing and uses `
 - **Production Ready**: Caching, preloading, guards, lazy-loading, and error boundaries.
 - **Framework Agnostic**: Works with React, Vue, Svelte, or vanilla JavaScript.
 - **Web Components**: Ready-to-use declarative routing components.
+
+-->
 
 <br />
 
