@@ -17,7 +17,33 @@ Combi-Router is built on `@doeixd/combi-parse` for robust URL parsing and uses `
 <br />
 
 ## ✨ Key Features
+> 🔗 **Type-Safe & Composable**  
+>  Build routes functionally and compose them by reference for perfect type safety and effortless refactoring.
+>
+> 🌳 **Hierarchical & Introspective**  
+> Routes create natural trees that mirror your app's structure, with built-in utilities to analyze the hierarchy.
+>
+> ⚡ **Powerful Data Loading**  
+>  Run data loaders for nested routes in parallel, with an advanced resource system featuring Suspense, caching, retries, and invalidation.
+>
+> 🧩 **Composable Layer Architecture**  
+>  Build your ideal router by mixing and matching feature layers (data, performance, dev tools) or creating your own.
+>
+> 🛡️ **Advanced Navigation & Guards**  
+>  Navigate with detailed results, cancellation support, and robust, type-safe route guards for fine-grained access control.
+>
+> 🔎 **Integrated SEO & Head Management**  
+>  Dynamically manage document head tags, including titles, meta descriptions, and social cards, directly from your route definitions.
+>
+> ✂️ **Tree-Shakeable & Modular**  
+>  A modular design ensures you only bundle the features you use, keeping your app lean and fast.
+>
+> 🛠️ **Superior Developer Experience**  
+>  Get dev-mode warnings, advanced debugging utilities, and detailed route analysis right out of the box.
 
+
+
+<!--
   🔗 **Type-Safe & Composable:** Build routes functionally and compose them by reference for perfect type safety and effortless refactoring.
   
   🌳 **Hierarchical & Introspective:** Routes create natural trees that mirror your app's structure, with built-in utilities to analyze the hierarchy.
@@ -34,7 +60,6 @@ Combi-Router is built on `@doeixd/combi-parse` for robust URL parsing and uses `
   
   🌐 **Framework Agnostic:** Works seamlessly with any framework (React, Vue, Svelte) or vanilla JS, including a set of ready-to-use helpers and Web Components.
 
-<!--
 ### **Core Routing**
 - **Reference-Based Navigation**: Navigate using route objects for perfect type safety.
 - **Functional Composition**: Build routes by composing pure functions instead of method chaining.
