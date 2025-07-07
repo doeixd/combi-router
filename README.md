@@ -1614,6 +1614,95 @@ router.onError(({ error, to, from }) => {
 });
 ```
 
+### 🧰 Advanced: Creating Custom Matchers
+
+While Combi-Router provides a comprehensive set of built-in matchers like `path`, `param`, and `query`, its true power lies in its composable foundation. The router is designed to be fully extensible, allowing you to create your own custom matchers using the full power of the underlying `@doeixd/combi-parse` library.
+
+This is an advanced feature for when you need to parse complex URL structures that go beyond simple static or dynamic segments.
+
+#### The `RouteMatcher` Contract
+
+At its core, a matcher is an object that fulfills the `RouteMatcher` contract. It tells the router two things:
+1.  **How to parse a URL segment**: This is done with a `combi-parse` parser. The parser's job is to recognize a part of the URL and, if it captures a value, return it as an object (e.g., `{ myParam: 'value' }`).
+2.  **How to build a URL segment**: This is the inverse operation, handled by a `build` function. Given a `params` object, it constructs the corresponding URL string.
+
+#### Example: A Version Matcher (`/v1/` or `/v2/`)
+
+Imagine you have an API that can be versioned, and you want a single route definition to handle both `/api/v1/posts` and `/api/v2/posts`, capturing the version as a parameter.
+
+You can create a custom `version()` matcher to handle this.
+
+```typescript
+// in my-matchers.ts
+import { str, choice } from '@doeixd/combi-parse';
+import type { RouteMatcher } from '@doeixd/combi-router';
+
+/**
+ * A custom matcher that recognizes /v1 or /v2 and captures the result.
+ * @param paramName The name for the captured version parameter.
+ */
+export function version(paramName: string): RouteMatcher {
+  // 1. The Parser: Use `choice` to accept 'v1' or 'v2'.
+  // It must return an object with the parameter name as the key.
+  const versionParser = str('/')
+    .keepRight(choice([str('v1'), str('v2')]))
+    .map(parsedVersion => ({ [paramName]: parsedVersion }));
+
+  // 2. The Builder: The inverse of the parser.
+  const buildFn = (params: Record<string, any>): string | null => {
+    const apiVersion = params[paramName];
+    if (apiVersion === 'v1' || apiVersion === 'v2') {
+      return `/${apiVersion}`;
+    }
+    // Return null if the required param is missing or invalid.
+    return null;
+  };
+
+  // 3. The Contract: Return an object that fulfills the RouteMatcher interface.
+  return {
+    type: 'customVersion', // A unique type for debugging
+    parser: versionParser,
+    build: buildFn,
+    paramName: paramName,
+  };
+}
+```
+
+#### Using Your Custom Matcher
+
+Now, you can import and use `version()` in your route definitions just like any built-in matcher.
+
+```typescript
+// in my-routes.ts
+import { route, path, param, createRouter } from '@doeixd/combi-router';
+import { version } from './my-matchers'; // Import your custom matcher
+
+const postsRoute = route(
+  path('api'),
+  version('apiVersion'), // Your custom matcher in action!
+  path('posts'),
+  param('id', z.number())
+);
+
+const router = createRouter([postsRoute]);
+
+// --- Matching ---
+const matchV1 = router.match('/api/v1/posts/123');
+// matchV1.params -> { apiVersion: 'v1', id: 123 }
+
+const matchV2 = router.match('/api/v2/posts/456');
+// matchV2.params -> { apiVersion: 'v2', id: 456 }
+
+// --- Building ---
+const urlV1 = router.build(postsRoute, { apiVersion: 'v1', id: 123 });
+// -> "/api/v1/posts/123"
+
+const urlV2 = router.build(postsRoute, { apiVersion: 'v2', id: 456 });
+// -> "/api/v2/posts/456"
+```
+
+By creating your own domain-specific matchers, you can build highly expressive, reusable, and type-safe routing grammars that are perfectly tailored to your application's needs.
+
 ### API Reference
 
 #### Core Functions
