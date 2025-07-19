@@ -2,7 +2,7 @@
 
 # Combi-Router 🛤️
 
-A composable, type-safe router built on parser combinators that thinks in trees. Routes are defined functionally and composed by reference, creating natural hierarchies that mirror your application structure.
+A composable, type-safe router built on my parser combinator library [Combi Parse](https://github.com/doeixd/combi-parse) that thinks in trees. Routes are defined functionally and composed by reference, creating natural hierarchies that mirror your application structure.
 
 <br />
 
@@ -483,19 +483,16 @@ The modular architecture enables significant bundle size optimization:
 ```typescript
 // Minimal bundle - only core routing
 import { route, extend, createRouter } from '@doeixd/combi-router';
-// ~12KB gzipped
 
 // With advanced resources
 import { createAdvancedResource } from '@doeixd/combi-router/data';
-// +4KB gzipped
 
 // With production features
 import { PerformanceManager } from '@doeixd/combi-router/features';
-// +6KB gzipped
 
 // Development tools (excluded in production)
 import { createWarningSystem } from '@doeixd/combi-router/dev';
-// +3KB gzipped (dev only)
+// (dev only)
 ```
 
 <br />
