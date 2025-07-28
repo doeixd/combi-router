@@ -67,7 +67,8 @@ interface RouteMatcher {
   readonly build: (params: Record<string, any>) => string | null; // The inverse function.
   readonly paramName?: string; // The name of the parameter this matcher captures.
   readonly schema?: StandardSchemaV1<any, any>; // The validation schema.
-}```
+}
+```
 
 *   **`path('users')`**:
     *   **`parser`**: `str('/').keepRight(str('users')).map(() => ({}))`. It looks for `/users` and then `.map()`s the result to an empty object `{}`. **This is key:** static path segments should not add properties to the final `params` object.
