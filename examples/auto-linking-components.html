@@ -199,7 +199,7 @@
 <body>
     <div class="container">
         <h1>🧩 Auto-Linking Components Demo</h1>
-        <p>This demo showcases the new auto-linking components: <code>&lt;view-suspense&gt;</code>, <code>&lt;view-fallback&gt;</code>, and <code>&lt;view-error-boundary&gt;</code>.</p>
+        <p>This demo showcases the new auto-linking components: <code><view-suspense></code>, <code><view-fallback></code>, and <code><view-error-boundary></code>.</p>
         
         <!-- Navigation -->
         <nav>
@@ -213,7 +213,7 @@
         <!-- Demo Section 1: Basic Suspense -->
         <div class="demo-section">
             <h3>🔄 Demo 1: View Suspense with Auto-Linking Fallback</h3>
-            <p>The <code>&lt;view-fallback&gt;</code> component auto-detects it's inside <code>&lt;view-suspense&gt;</code> and shows during loading.</p>
+            <p>The <code><view-fallback></code> component auto-detects it's inside <code><view-suspense></code> and shows during loading.</p>
             
             <view-suspense view-id="slow-content" delay="300">
                 <view-fallback>
@@ -230,19 +230,19 @@
             </view-suspense>
             
             <div class="code-block">
-&lt;view-suspense view-id="slow-content" delay="300"&gt;
-  &lt;view-fallback&gt;
-    &lt;div class="loading-content"&gt;Loading...&lt;/div&gt;
-  &lt;/view-fallback&gt;
-  &lt;div&gt;Default content&lt;/div&gt;
-&lt;/view-suspense&gt;
+<view-suspense view-id="slow-content" delay="300">
+  <view-fallback>
+    <div class="loading-content">Loading...</div>
+  </view-fallback>
+  <div>Default content</div>
+</view-suspense>
             </div>
         </div>
         
         <!-- Demo Section 2: Error Boundary -->
         <div class="demo-section">
             <h3>❌ Demo 2: Error Boundary with Auto-Linking Fallback</h3>
-            <p>The <code>&lt;view-fallback&gt;</code> automatically detects it's inside <code>&lt;view-error-boundary&gt;</code> and shows on errors.</p>
+            <p>The <code><view-fallback></code> automatically detects it's inside <code><view-error-boundary></code> and shows on errors.</p>
             
             <view-error-boundary>
                 <view-area match="/error-prone" view-id="error-content"></view-area>
@@ -262,19 +262,19 @@
             </view-error-boundary>
             
             <div class="code-block">
-&lt;view-error-boundary&gt;
-  &lt;view-area match="/error-prone" view-id="error-content"&gt;&lt;/view-area&gt;
-  &lt;view-fallback&gt;
-    &lt;div class="error-content"&gt;Something went wrong!&lt;/div&gt;
-  &lt;/view-fallback&gt;
-&lt;/view-error-boundary&gt;
+                <view-error-boundary>
+                  <view-area match="/error-prone" view-id="error-content"></view-area>
+                  <view-fallback>
+                    <div class="error-content">Something went wrong!</div>
+                  </view-fallback>
+                </view-error-boundary>
             </div>
         </div>
         
         <!-- Demo Section 3: Route Fallback (404) -->
         <div class="demo-section">
             <h3>🔍 Demo 3: Route Fallback (404 Page)</h3>
-            <p>When <code>&lt;view-fallback&gt;</code> is not nested in suspense/error components, it acts as a route fallback.</p>
+            <p>When <code><view-fallback></code> is not nested in suspense/error components, it acts as a route fallback.</p>
             
             <view-fallback match-pattern="*">
                 <div class="fallback-404">
@@ -286,12 +286,12 @@
             </view-fallback>
             
             <div class="code-block">
-&lt;view-fallback match-pattern="*"&gt;
-  &lt;div class="fallback-404"&gt;
-    &lt;h2&gt;Page Not Found&lt;/h2&gt;
-    &lt;a href="/"&gt;Go Home&lt;/a&gt;
-  &lt;/div&gt;
-&lt;/view-fallback&gt;
+                <view-fallback match-pattern="*">
+                  <div class="fallback-404">
+                    <h2>Page Not Found</h2>
+                    <a href="/">Go Home</a>
+                  </div>
+                </view-fallback>
             </div>
         </div>
         
@@ -312,9 +312,9 @@
                 <div class="info-box">
                     <strong>💡 How it works:</strong>
                     <ul style="margin: 0.5rem 0 0 1rem; padding: 0;">
-                        <li><code>&lt;view-fallback&gt;</code> automatically detects its parent context</li>
-                        <li>Inside <code>&lt;view-suspense&gt;</code> → shows during loading</li>
-                        <li>Inside <code>&lt;view-error-boundary&gt;</code> → shows on errors</li>
+                        <li><code><view-fallback></code> automatically detects its parent context</li>
+                        <li>Inside <code><view-suspense></code> → shows during loading</li>
+                        <li>Inside <code><view-error-boundary></code> → shows on errors</li>
                         <li>Standalone → acts as route fallback (404)</li>
                     </ul>
                 </div>
@@ -327,7 +327,7 @@
                 <p>This page simulates slow loading to demonstrate the suspense component.</p>
                 
                 <div class="info-box">
-                    <strong>✨ Magic:</strong> The loading state was automatically managed by the <code>&lt;view-suspense&gt;</code> component with its nested <code>&lt;view-fallback&gt;</code>.
+                    <strong>✨ Magic:</strong> The loading state was automatically managed by the <code><view-suspense></code> component with its nested <code><view-fallback></code>.
                 </div>
                 
                 <script>
@@ -345,7 +345,7 @@
                 <p>This page might throw errors to demonstrate the error boundary component.</p>
                 
                 <div class="info-box">
-                    <strong>🛡️ Protection:</strong> If this page throws an error, the <code>&lt;view-error-boundary&gt;</code> will catch it and show the fallback content.
+                    <strong>🛡️ Protection:</strong> If this page throws an error, the <code><view-error-boundary></code> will catch it and show the fallback content.
                 </div>
                 
                 <script>
