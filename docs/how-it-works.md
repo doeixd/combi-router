@@ -20,7 +20,6 @@ To get the most out of this document, you should have a solid understanding of:
 *   Basic functional programming concepts (immutability, pure functions).
 *   The general purpose of a client-side router.
 
-
 ### Part 1: The Foundation - A `combi-parse` Crash Course
 
 Combi-Router does not have its own parsing engine. It stands on the shoulders of a small, powerful library: `@doeixd/combi-parse`. To understand the router, you must first understand the concept of a **parser combinator**.
@@ -34,28 +33,27 @@ import { str, regex, sequence } from '@doeixd/combi-parse';
 
 const url = '/users/123/posts';
 
-// 1. A parser for the static parts. `keepRight` and `keepLeft` are used to
-//    discard the parts we don't need (like the slashes).
+// Step 1: Parse the static parts. `keepRight` is a combinator that runs two
+// parsers in sequence but only keeps the result of the right-hand one.
 const userParser = str('/').keepRight(str('users'));
 // userParser.run(url) -> Success("users", rest: "/123/posts")
 
 const postsParser = str('/').keepRight(str('posts'));
 // postsParser.run("/posts") -> Success("posts", rest: "")
 
-// 2. A parser for the dynamic ID. We use a regular expression and then
-//    transform the resulting string into a number.
+// Step 2: Parse the dynamic ID. We use a regular expression, then use the
+// `.map()` combinator to transform the resulting string into a number.
 const idParser = str('/').keepRight(regex(/[0-9]+/)).map(Number);
 // idParser.run("/123/posts") -> Success(123, rest: "/posts")
 
-// 3. Combine them in order with the `sequence` combinator.
+// Step 3: Combine them in order with the `sequence` combinator.
 const fullParser = sequence([userParser, idParser, postsParser]);
 // fullParser.run(url) -> Success(["users", 123, "posts"], rest: "")
 
-// 4. Transform the final result into a useful object.
+// Step 4: Transform the final result array into a useful object.
 const finalParser = fullParser.map(([_, id, __]) => ({ userId: id }));
 // finalParser.run(url) -> Success({ userId: 123 }, rest: "")
 ```
-
 This is the engine of Combi-Router. Every part of a URL is matched by a specific parser, and these small parsers are combined to describe the entire URL structure.
 
 ### Part 2: The `RouteMatcher` - Bridging Concept and Code
@@ -69,40 +67,35 @@ interface RouteMatcher {
   readonly build: (params: Record<string, any>) => string | null; // The inverse function.
   readonly paramName?: string; // The name of the parameter this matcher captures.
   readonly schema?: StandardSchemaV1<any, any>; // The validation schema.
-}
-```
-
-Here's how the built-in matchers implement this:
+}```
 
 *   **`path('users')`**:
-    *   **`parser`**: `str('/').keepRight(str('users')).map(() => ({}))`. It looks for `/users`, returns the string "users", and then immediately `.map()`s the result to an empty object `{}`. **This is a key detail:** static path segments should not add properties to the final `params` object.
+    *   **`parser`**: `str('/').keepRight(str('users')).map(() => ({}))`. It looks for `/users` and then `.map()`s the result to an empty object `{}`. **This is key:** static path segments should not add properties to the final `params` object.
     *   **`build`**: A simple function: `() => '/users'`.
 
 *   **`param('id', NumberSchema)`**:
-    *   **`parser`**: This is more advanced. It first uses `regex(/[^/?#]+/)` to capture a raw string segment (e.g., "123"). It then uses the `.chain()` combinator. `chain` allows the result of one parser to determine the *next* parser to run. Here, it takes the captured string, runs it through the `NumberSchema` validator, and:
-        *   If successful, it returns a *new parser* that succeeds with the validated value, wrapped in an object: `success({ id: 123 })`.
-        *   If it fails, it returns a failing parser.
-    *   **`build`**: `(params) => \`/${params['id']}\``. It constructs the URL segment from the params object.
+    *   **`parser`**: This is more advanced. It first uses `regex(/[^/?#]+/)` to capture a raw string segment (e.g., "123"). It then uses the `.chain()` combinator. This is a powerful tool that allows the *result* of one parser to determine the *next* parser to run. In this case, it lets us validate the captured string segment *before* deciding whether the overall parser should succeed with a `{ id: 123 }` value or fail.
+    *   **`build`**: `(params) => \`/${params['id']}\``.
 
 *   **`query('page', NumberSchema)`**:
-    *   **`parser`**: This is a special case. It does **not** consume any part of the URL's *path*. Its job is to act as a piece of metadata. Its parser immediately succeeds, returning an object containing the parameter's name and its schema: `{ name: 'page', schema: NumberSchema }`. The router's main `match` logic will use this metadata later to parse the actual query string.
+    *   **`parser`**: This is a special case. It does **not** consume any part of the URL's *path*. Its job is to act as metadata. Its parser immediately succeeds, returning an object containing the parameter's name and its schema: `{ name: 'page', schema: NumberSchema }`. The router's main `match` logic will use this metadata later.
     *   **`build`**: `(params) => params['page'] ? \`page=${params['page']}\` : null`.
 
 ### Part 3: The `Route` Object - An Immutable Blueprint
 
 A `Route` object is an immutable container for an array of `RouteMatcher` objects and some metadata.
 
-#### Key Properties and Their Rationale
+#### The Anatomy of a `Route`
 
 *   **`matchers: readonly RouteMatcher[]`**: `readonly` is intentional, making the `Route` object immutable. This is key for predictable composition. `extend` creates a *new* object rather than modifying an existing one.
 
-*   **`parent?: Route<any>`**: This reference is what forms the tree, enabling features like inherited parameters, hierarchical matching, and breadcrumbs.
+*   **`parent?: Route<any>`**: This reference is what forms the tree, enabling features like inherited parameters and hierarchical matching.
 
 *   **`get parser(): Parser<TParams>`**: This is a lazily-initialized property.
-    *   **Why lazy?** Imagine an application with 500 routes. Building 500 complex composite parsers when the application starts would add noticeable startup delay. By making the parser a getter, we only pay the cost of building it the first time a specific route is involved in a matching operation.
+    > **Why lazy?** Imagine an application with 500 routes. Building 500 complex composite parsers when the application starts would add noticeable startup delay. By making the parser a getter, we only pay the cost of building it the first time a specific route is involved in a matching operation.
 
 *   **`_phantomParams?: TParams`**: This property is the secret to end-to-end type safety.
-    *   **Why the phantom?** This property doesn't exist at runtime; it's a TypeScript trick. It's used to "carry" the inferred parameter type `TParams` with the `Route` object itself. Without it, `const myRoute = route(...)` would lose its specific parameter type information. This phantom property is what allows TypeScript to know exactly what parameters `router.navigate(myRoute, ...)` and `router.build(myRoute, ...)` expect.
+    > **Why the phantom?** This property doesn't exist at runtime; it's a TypeScript trick used to "carry" the inferred parameter type `TParams` with the `Route` object itself. Think of it like a label on a container that tells TypeScript what's *supposed* to be inside. This label is critically important for type-checking during development, but it's removed before the container is shipped (at runtime), so it has zero performance cost.
 
 ### Part 4: The Matching Engine - A Step-by-Step Trace
 
@@ -119,18 +112,9 @@ This is the most complex part of the router. It's not a simple loop; it's a mult
 
 1.  **Input:** `url = "/dashboard/users/42"`
 2.  **Run All Parsers:** The engine iterates through *every* registered route and runs its composite parser against the URL.
-    *   `dashboardRoute.parser.run(url)` -> **Success!**
-        *   Consumed: `/dashboard`
-        *   Value: `{}`
-        *   Remaining: `/users/42`
-    *   `usersRoute.parser.run(url)` -> **Success!**
-        *   Consumed: `/dashboard/users`
-        *   Value: `{}`
-        *   Remaining: `/42`
-    *   `userDetailRoute.parser.run(url)` -> **Success!**
-        *   Consumed: `/dashboard/users/42`
-        *   Value: `{id: 42}`
-        *   Remaining: ``
+    *   `dashboardRoute.parser.run(url)` -> **Success!** (consumed `/dashboard`, value `{}`, remaining `/users/42`)
+    *   `usersRoute.parser.run(url)` -> **Success!** (consumed `/dashboard/users`, value `{}`, remaining `/42`)
+    *   `userDetailRoute.parser.run(url)` -> **Success!** (consumed `/dashboard/users/42`, value `{id: 42}`, remaining ``)
 3.  **Collect & Sort Successes by Consumed Length:** The results are sorted to find the most general (parent) to most specific (leaf).
     *   1. `dashboardRoute` (consumed 10 chars)
     *   2. `usersRoute` (consumed 16 chars)
@@ -142,21 +126,41 @@ This is the most complex part of the router. It's not a simple loop; it's a mult
     *   Link them: `match1.child = match2`, `match2.child = match3`.
 5.  **Final Output:** The engine returns `match1`, the root of the match tree. The UI can then traverse this tree to render the nested layout.
 
+**What if a parser fails?** In step 2, if a parser fails to match (e.g., if the URL was `/dashboard/users/abc` and the schema expected a number), it would simply be excluded from the list of successful matches. The algorithm would then proceed with the remaining successes, potentially matching only up to the parent `usersRoute`.
+
+> **Key Takeaway:** The router doesn't just find the first match; it finds *all* matching route prefixes and builds them into a hierarchical `RouteMatch` tree, enabling nested layouts and parallel data loading.
+
 ### Part 5: The Navigation Lifecycle - An Orchestrated Flow
 
-When you call `router.navigate(route, params)`, a precise sequence of events is triggered:
+When you call `router.navigate(route, params)`, a precise sequence of events is triggered, visualized below:
 
-1.  **Build URL**: The router calls the `build()` function on the route's matchers, constructing a URL string (e.g., `/dashboard/users/42`). This is a fail-fast step; if required parameters are missing, it returns `null` and the navigation aborts immediately with a `ValidationFailed` error.
+```
+[START] -> navigate(route, params)
+   |
+   v
+[1. Build URL] --(fail)--> [RETURN ValidationFailed Error]
+   |
+   v
+[2. Match URL] --(fail)--> [RETURN RouteNotFound Error]
+   |
+   v
+[3. Run Guards] --(fail)--> [RETURN GuardRejected Error / REDIRECT]
+   |
+   v
+[4. Load Data (in parallel)] --(fail)--> [RETURN LoaderFailed Error]
+   |
+   v
+[5. Update State & Render (View Transitions)]
+   |
+   v
+[6. Update History API]
+   |
+   v
+[END] -> RETURN Success
+```
+This orchestrated flow ensures that data is only loaded after guards have passed, and the UI is only updated after data is available, providing a robust and predictable navigation experience.
 
-2.  **Match URL**: It takes the built URL and runs the full matching algorithm described in Part 4 to generate the new `RouteMatch` tree.
-
-3.  **Run Guards**: It traverses the new `RouteMatch` tree, executing any `guard` functions. This is a short-circuiting process. If any guard returns `false`, the entire navigation is aborted. If any guard returns a string (a URL), the navigation is aborted and a new redirect navigation is started.
-
-4.  **Load Data**: It traverses the tree again, collecting all `loader` functions. It then executes them **in parallel** using `Promise.all`. This is a critical performance feature that prevents sequential data-loading "waterfalls" in nested routes. The results are attached to the `.data` property of their respective `RouteMatch` objects.
-
-5.  **Update State & Render**: Once all guards have passed and all data has loaded, the router updates its internal state (`this.currentMatch = newMatchTree`) and notifies all subscribers. This state change triggers the UI to re-render. To make this smooth, it uses the browser's native View Transitions API if available.
-
-6.  **Update History API**: Finally, it calls `history.pushState` to update the browser's URL bar and add an entry to the session history.
+> **Key Takeaway:** The lifecycle is designed for performance and correctness. By collecting all `loader` functions from the match tree and running them with `Promise.all`, the router prevents sequential data-loading "waterfalls" in nested routes.
 
 ### Part 6: The `makeLayered` System - Demystifying Composition
 
@@ -207,9 +211,9 @@ The old `CombiRouter` class is now just a compatibility wrapper that uses `creat
 
 ### Part 7: Advanced Feature Mechanics
 
-*   **`createAdvancedResource` (Suspense)**: The `read()` method is a state machine. If the status is `pending`, it **throws a special promise**. This is the core contract of Suspense. A parent component (or framework integration) is expected to have a `try...catch` block. When it catches a promise, it knows the component is loading and can render a fallback UI. It then uses `.then()` on the caught promise to re-render the component when the data is ready.
+*   **`createAdvancedResource` (Suspense)**: The `read()` method is a state machine. If the status is `pending`, it **throws a special promise**. This is the core contract of Suspense. A parent component or framework integration is expected to have a `try...catch` block. When it catches a promise, it knows the component is loading and can render a fallback UI. It then uses `.then()` on the caught promise to re-render the component when the data is ready.
 
-*   **`HeadManager`**: This class maintains a `Set<Element>` of all DOM nodes it has ever created. When `apply()` is called, it first iterates through this set and removes every element it owns from the `<head>`. This provides a clean slate. Then, it creates new `<title>`, `<meta>`, and `<link>` elements based on the new data and adds them to both the DOM and its internal `Set` for the next cleanup cycle.
+*   **`HeadManager`**: This class maintains a `Set<Element>` of all DOM nodes it has ever created. When `apply()` is called, it first iterates through this set and removes every element it owns from the `<head>`, creating a clean slate. Then, it creates new `<title>`, `<meta>`, and `<link>` elements based on the new data and adds them to both the DOM and its internal `Set` for the next cleanup cycle.
 
 *   **Web Components (`components-standalone.ts`)**:
     *   **The `RouterManager` Singleton**: This is a classic Mediator pattern. Components don't know about each other; they only talk to the manager.
@@ -226,6 +230,9 @@ The old `CombiRouter` class is now just a compatibility wrapper that uses `creat
 
 *   **Trade-off: The `CombiRouter` Compatibility Wrapper**
     *   **Answer:** The existence of two APIs (`new CombiRouter()` vs `createLayeredRouter()`) adds a small amount of conceptual overhead. This was a deliberate choice to provide a smooth migration path for existing users and a simpler entry point for beginners, while still offering the full power of the layer system to advanced users.
+
+*   **Trade-off: The Parser-Combinator Learning Curve**
+    *   **Answer:** While powerful, the parser-combinator approach has a slightly steeper learning curve than simple string/regex matching for developers unfamiliar with the concept. We believe the dramatic improvements in type safety, composability, and refactorability are a worthwhile investment, but it's a trade-off compared to the immediate familiarity of a more traditional router.
 
 *   **Why `setTimeout(..., 0)` in the Web Component Manager?**
     *   **Answer:** To handle the initial component registration storm. When a browser first renders the page, all `<view-area>` components might call `connectedCallback` in a single, synchronous batch. Rebuilding the router for each one would be inefficient. `setTimeout` schedules the `rebuildRouter` call to happen *after* the current synchronous block has finished, effectively batching all initial registrations into a single, efficient rebuild operation.
