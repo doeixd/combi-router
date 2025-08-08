@@ -44,20 +44,22 @@ export type {
   StandardSchemaV1,
   StandardSchemaV1Namespace,
   Parser,
-  Success
-} from './core/types';
+  Success,
+  ViewContext,
+  ViewFactory,
+} from "./core/types";
 
 // Error classes and enums
-export { RouteValidationError, NavigationErrorType } from './core/types';
+export { RouteValidationError, NavigationErrorType } from "./core/types";
 
 // Route class and building functions
-export { Route, route, extend, pipe } from './core/route';
+export { Route, route, extend, pipe } from "./core/route";
 
 // Route matchers
-export { path, param, query, end } from './core/matchers';
+export { path, param, query, end } from "./core/matchers";
 
 // Router class and factory (backwards compatible - uses layered implementation)
-export { CombiRouter, createRouter } from './core/router-compat';
+export { CombiRouter, createRouter } from "./core/router-compat";
 
 // New composable API exports
 export {
@@ -65,46 +67,51 @@ export {
   createComposableRouter,
   conditionalLayer,
   identityLayer,
-  makeLayered
-} from './core/layered-router';
+  makeLayered,
+} from "./core/layered-router";
 
 // Layer system exports
-export * from './layers';
+export * from "./layers";
 
 // Guards
-export { guard, typedGuard } from './core/guards';
+export { guard, typedGuard } from "./core/guards";
 
 // Meta enhancers
-export { meta, loader, layout, lazy } from './core/meta';
+export { meta, loader, layout, lazy, view } from "./core/meta";
 
 // =================================================================
 // ----------------------- DATA EXPORTS ---------------------------
 // =================================================================
 
 // Resource/Suspense system
-export { createResource, createAdvancedResource, resourceState, SuspensePromise } from './data/resource';
+export {
+  createResource,
+  createAdvancedResource,
+  resourceState,
+  SuspensePromise,
+} from "./data/resource";
 
 // Cache utilities
-export { cache, AdvancedCache, globalCache } from './data/cache';
+export { cache, AdvancedCache, globalCache } from "./data/cache";
 
 // =================================================================
 // ----------------------- DEV EXPORTS ----------------------------
 // =================================================================
 
 // Development validation (only in dev builds)
-export { validateRoute, validateRoutes } from './dev/validation';
+export { validateRoute, validateRoutes } from "./dev/validation";
 
 // Enhanced debugging utilities (only in dev builds)
-export { 
-  inspectRoute, 
-  inspectMatch, 
-  visualizeRouteTree, 
-  debugRouter, 
+export {
+  inspectRoute,
+  inspectMatch,
+  visualizeRouteTree,
+  debugRouter,
   monitorNavigation,
   RouterDebugger,
   createDebugger,
-  analyzeRouterStructure
-} from './dev/debugging';
+  analyzeRouterStructure,
+} from "./dev/debugging";
 
 // Warning system (only in dev builds)
 export {
@@ -112,8 +119,8 @@ export {
   createWarningSystem,
   analyzeRoutes,
   WarningType,
-  WarningSeverity
-} from './dev/warnings';
+  WarningSeverity,
+} from "./dev/warnings";
 
 // Conflict detection (only in dev builds)
 export {
@@ -121,15 +128,15 @@ export {
   analyzeRouteConflicts,
   logRouteConflicts,
   findConflicts,
-  ConflictType
-} from './dev/conflicts';
+  ConflictType,
+} from "./dev/conflicts";
 
 // Performance monitoring (only in dev builds)
 export {
   PerformanceMonitor,
   createPerformanceMonitor,
-  logPerformanceMetrics
-} from './dev/performance';
+  logPerformanceMetrics,
+} from "./dev/performance";
 
 // Comprehensive dev mode (only in dev builds)
 export {
@@ -137,8 +144,8 @@ export {
   enableDevMode,
   analyzeRouter,
   createDevTools,
-  exposeDevTools
-} from './dev/index';
+  exposeDevTools,
+} from "./dev/index";
 
 // Dev mode types
 export type {
@@ -159,19 +166,19 @@ export type {
   NavigationStep,
   MatchInspection,
   ValidationReport,
-  Optimization
-} from './dev/index';
+  Optimization,
+} from "./dev/index";
 
 // =================================================================
 // ---------------------- PRODUCTION FEATURES ---------------------
 // =================================================================
 
 // Production features for modern web applications
-export * from './features';
+export * from "./features";
 
 // =================================================================
 // ----------------------- UTILITY EXPORTS ------------------------
 // =================================================================
 
 // Framework-agnostic integration helpers
-export * from './utils';
+export * from "./utils";

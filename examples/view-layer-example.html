@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Combi-Router View Layer Example</title>
+        <style>
+            body {
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                    sans-serif;
+                margin: 0;
+                padding: 0;
+                background-color: #f5f5f5;
+            }
+
+            .container {
+                max-width: 800px;
+                margin: 0 auto;
+                background: white;
+                min-height: 100vh;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            }
+
+            header {
+                background: #2563eb;
+                color: white;
+                padding: 1rem;
+                text-align: center;
+            }
+
+            header h1 {
+                margin: 0;
+            }
+
+            header a {
+                color: white;
+                text-decoration: none;
+            }
+
+            nav {
+                background: #1e40af;
+                padding: 0.5rem 1rem;
+            }
+
+            nav a {
+                color: white;
+                text-decoration: none;
+                margin-right: 1rem;
+                padding: 0.5rem 1rem;
+                border-radius: 4px;
+                transition: background-color 0.2s;
+            }
+
+            nav a:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+
+            main {
+                padding: 2rem;
+                min-height: 400px;
+            }
+
+            .post-list {
+                display: grid;
+                gap: 1rem;
+            }
+
+            .post-card {
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 1.5rem;
+                text-decoration: none;
+                color: inherit;
+                transition:
+                    transform 0.2s,
+                    box-shadow 0.2s;
+            }
+
+            .post-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
+
+            .post-card h3 {
+                margin: 0 0 0.5rem 0;
+                color: #2563eb;
+            }
+
+            .post-card p {
+                margin: 0;
+                color: #6b7280;
+            }
+
+            .user-profile {
+                background: #f8fafc;
+                border-radius: 8px;
+                padding: 2rem;
+            }
+
+            .user-avatar {
+                width: 80px;
+                height: 80px;
+                border-radius: 50%;
+                background: #2563eb;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 2rem;
+                font-weight: bold;
+                margin-bottom: 1rem;
+            }
+
+            .loading {
+                text-align: center;
+                padding: 4rem;
+                color: #6b7280;
+            }
+
+            .loading::after {
+                content: "";
+                display: inline-block;
+                width: 20px;
+                height: 20px;
+                border: 2px solid #e5e7eb;
+                border-top: 2px solid #2563eb;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin-left: 10px;
+            }
+
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+
+            .error {
+                background: #fef2f2;
+                border: 1px solid #fecaca;
+                border-radius: 8px;
+                padding: 1.5rem;
+                color: #dc2626;
+                text-align: center;
+            }
+
+            .error h3 {
+                margin: 0 0 1rem 0;
+            }
+
+            .btn {
+                display: inline-block;
+                padding: 0.5rem 1rem;
+                background: #2563eb;
+                color: white;
+                text-decoration: none;
+                border-radius: 4px;
+                border: none;
+                cursor: pointer;
+                transition: background-color 0.2s;
+            }
+
+            .btn:hover {
+                background: #1d4ed8;
+            }
+
+            .back-link {
+                color: #2563eb;
+                text-decoration: none;
+                margin-bottom: 1rem;
+                display: inline-block;
+            }
+
+            .back-link:hover {
+                text-decoration: underline;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <h1><a href="/">Combi-Router Blog</a></h1>
+            </header>
+            <nav>
+                <a href="/">Home</a>
+                <a href="/about">About</a>
+                <a href="/users">Users</a>
+                <a href="/posts">Posts</a>
+            </nav>
+            <main id="app-root">
+                <!-- Content will be rendered here by the ViewLayer -->
+            </main>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/zod@3.23.8/lib/index.umd.min.js"></script>
+        <script type="module">
+            // Import the router components (adjust paths as needed for your build)
+            import {
+                createLayeredRouter,
+                createCoreNavigationLayer,
+                createViewLayer,
+                route,
+                pipe,
+                path,
+                param,
+                end,
+                loader,
+                view,
+            } from "../dist/esm/production/index.js";
+
+            import { head } from "../dist/esm/production/features/head.js";
+
+            const { z } = window.zod;
+
+            // =================================================================
+            // Mock API for demonstration
+            // =================================================================
+
+            const mockApi = {
+                // Simulate async data fetching with delays
+                async fetchPosts() {
+                    await new Promise((resolve) => setTimeout(resolve, 800));
+                    return [
+                        {
+                            id: 1,
+                            title: "Getting Started with Combi-Router",
+                            slug: "getting-started",
+                            excerpt:
+                                "Learn how to build modern web apps with composable routing.",
+                        },
+                        {
+                            id: 2,
+                            title: "Understanding View Layers",
+                            slug: "view-layers",
+                            excerpt:
+                                "Deep dive into declarative view management.",
+                        },
+                        {
+                            id: 3,
+                            title: "Advanced Routing Patterns",
+                            slug: "advanced-patterns",
+                            excerpt:
+                                "Explore complex routing scenarios and solutions.",
+                        },
+                    ];
+                },
+
+                async fetchPostBySlug(slug) {
+                    await new Promise((resolve) => setTimeout(resolve, 600));
+                    const posts = {
+                        "getting-started": {
+                            id: 1,
+                            title: "Getting Started with Combi-Router",
+                            slug: "getting-started",
+                            content:
+                                "Combi-Router is a powerful, type-safe routing library built on parser combinators. It provides a composable architecture that makes complex routing scenarios simple and maintainable.",
+                            author: "Patrick Glenn",
+                            publishDate: "2024-01-15",
+                        },
+                        "view-layers": {
+                            id: 2,
+                            title: "Understanding View Layers",
+                            slug: "view-layers",
+                            content:
+                                "The view layer provides a declarative way to connect routes with DOM rendering. It handles loading states, error boundaries, and automatic SPA navigation.",
+                            author: "Jane Smith",
+                            publishDate: "2024-01-18",
+                        },
+                        "advanced-patterns": {
+                            id: 3,
+                            title: "Advanced Routing Patterns",
+                            slug: "advanced-patterns",
+                            content:
+                                "Explore nested routes, route guards, data loaders, and how to build complex applications with clean, composable code.",
+                            author: "Bob Johnson",
+                            publishDate: "2024-01-20",
+                        },
+                    };
+
+                    const post = posts[slug];
+                    if (!post) {
+                        throw new Error(`Post with slug "${slug}" not found`);
+                    }
+                    return post;
+                },
+
+                async fetchUsers() {
+                    await new Promise((resolve) => setTimeout(resolve, 400));
+                    return [
+                        {
+                            id: 1,
+                            name: "Alice Johnson",
+                            email: "alice@example.com",
+                            role: "Admin",
+                        },
+                        {
+                            id: 2,
+                            name: "Bob Smith",
+                            email: "bob@example.com",
+                            role: "Editor",
+                        },
+                        {
+                            id: 3,
+                            name: "Carol Wilson",
+                            email: "carol@example.com",
+                            role: "Author",
+                        },
+                    ];
+                },
+
+                async fetchUserById(id) {
+                    await new Promise((resolve) => setTimeout(resolve, 500));
+                    const users = {
+                        1: {
+                            id: 1,
+                            name: "Alice Johnson",
+                            email: "alice@example.com",
+                            role: "Admin",
+                            bio: "System administrator with 10+ years experience.",
+                        },
+                        2: {
+                            id: 2,
+                            name: "Bob Smith",
+                            email: "bob@example.com",
+                            role: "Editor",
+                            bio: "Content editor and writer specializing in technical documentation.",
+                        },
+                        3: {
+                            id: 3,
+                            name: "Carol Wilson",
+                            email: "carol@example.com",
+                            role: "Author",
+                            bio: "Technical writer and developer advocate.",
+                        },
+                    };
+
+                    const user = users[id];
+                    if (!user) {
+                        throw new Error(`User with ID "${id}" not found`);
+                    }
+                    return user;
+                },
+            };
+
+            // =================================================================
+            // Route Definitions with View Functions
+            // =================================================================
+
+            // Home route
+            const homeRoute = pipe(
+                route(path(""), end),
+                head({ title: "Home", titleTemplate: "Combi-Router | %s" }),
+                view(
+                    ({ match }) => `
+                <div>
+                    <h2>Welcome to Combi-Router!</h2>
+                    <p>This example demonstrates the new view layer functionality. The view layer provides:</p>
+                    <ul>
+                        <li>Declarative view definitions co-located with routes</li>
+                        <li>Automatic loading and error state management</li>
+                        <li>SPA navigation with link interception</li>
+                        <li>Integration with head management for SEO</li>
+                    </ul>
+                    <p>Navigate around using the links above to see it in action!</p>
+
+                    <div style="margin-top: 2rem;">
+                        <a href="/posts" class="btn">View Blog Posts</a>
+                        <a href="/users" class="btn" style="margin-left: 1rem;">View Users</a>
+                    </div>
+                </div>
+            `,
+                ),
+            );
+
+            // About route
+            const aboutRoute = pipe(
+                route(path("about"), end),
+                head({ title: "About", titleTemplate: "Combi-Router | %s" }),
+                view(
+                    ({ match }) => `
+                <div>
+                    <h2>About This Example</h2>
+                    <p>This is a demonstration of Combi-Router's new view layer functionality. The view layer brings declarative rendering capabilities to the router.</p>
+
+                    <h3>Key Features</h3>
+                    <ul>
+                        <li><strong>Declarative Views:</strong> Views are defined alongside routes using the <code>view()</code> enhancer</li>
+                        <li><strong>Loading States:</strong> Automatic loading indicators during data fetching</li>
+                        <li><strong>Error Boundaries:</strong> Graceful error handling with custom error views</li>
+                        <li><strong>SPA Navigation:</strong> Seamless navigation without page reloads</li>
+                        <li><strong>Head Management:</strong> Automatic SEO and meta tag updates</li>
+                    </ul>
+
+                    <a href="/" class="back-link">← Back to Home</a>
+                </div>
+            `,
+                ),
+            );
+
+            // Posts list route with data loading
+            const postsRoute = pipe(
+                route(path("posts"), end),
+                loader(async () => ({ posts: await mockApi.fetchPosts() })),
+                head({
+                    title: "Blog Posts",
+                    titleTemplate: "Combi-Router | %s",
+                }),
+                view(
+                    ({ match }) => `
+                <div>
+                    <h2>Blog Posts</h2>
+                    <div class="post-list">
+                        ${match.data.posts
+                            .map(
+                                (post) => `
+                            <a href="/posts/${post.slug}" class="post-card">
+                                <h3>${post.title}</h3>
+                                <p>${post.excerpt}</p>
+                            </a>
+                        `,
+                            )
+                            .join("")}
+                    </div>
+                    <a href="/" class="back-link">← Back to Home</a>
+                </div>
+            `,
+                ),
+            );
+
+            // Individual post route with data loading and error handling
+            const postDetailRoute = pipe(
+                route(path("posts"), param("slug", z.string()), end),
+                loader(async ({ params }) => ({
+                    post: await mockApi.fetchPostBySlug(params.slug),
+                })),
+                head(({ data }) => ({
+                    title: data.post?.title || "Blog Post",
+                    titleTemplate: "Combi-Router | %s",
+                    meta: [
+                        {
+                            name: "description",
+                            content: data.post?.excerpt || "A blog post",
+                        },
+                        {
+                            name: "author",
+                            content: data.post?.author || "Unknown",
+                        },
+                    ],
+                })),
+                view(
+                    ({ match }) => `
+                <article>
+                    <a href="/posts" class="back-link">← Back to Posts</a>
+                    <h2>${match.data.post.title}</h2>
+                    <div style="margin: 1rem 0; color: #6b7280; font-size: 0.9rem;">
+                        By ${match.data.post.author} • ${match.data.post.publishDate}
+                    </div>
+                    <div style="line-height: 1.6;">
+                        <p>${match.data.post.content}</p>
+                    </div>
+                </article>
+            `,
+                ),
+            );
+
+            // Users list route
+            const usersRoute = pipe(
+                route(path("users"), end),
+                loader(async () => ({ users: await mockApi.fetchUsers() })),
+                head({ title: "Users", titleTemplate: "Combi-Router | %s" }),
+                view(
+                    ({ match }) => `
+                <div>
+                    <h2>Users</h2>
+                    <div class="post-list">
+                        ${match.data.users
+                            .map(
+                                (user) => `
+                            <a href="/users/${user.id}" class="post-card">
+                                <h3>${user.name}</h3>
+                                <p>${user.email} • ${user.role}</p>
+                            </a>
+                        `,
+                            )
+                            .join("")}
+                    </div>
+                    <a href="/" class="back-link">← Back to Home</a>
+                </div>
+            `,
+                ),
+            );
+
+            // Individual user route
+            const userDetailRoute = pipe(
+                route(path("users"), param("id", z.string()), end),
+                loader(async ({ params }) => ({
+                    user: await mockApi.fetchUserById(params.id),
+                })),
+                head(({ data }) => ({
+                    title: data.user?.name || "User Profile",
+                    titleTemplate: "Combi-Router | %s",
+                })),
+                view(
+                    ({ match }) => `
+                <div class="user-profile">
+                    <a href="/users" class="back-link">← Back to Users</a>
+                    <div class="user-avatar">
+                        ${match.data.user.name.charAt(0)}
+                    </div>
+                    <h2>${match.data.user.name}</h2>
+                    <p><strong>Email:</strong> ${match.data.user.email}</p>
+                    <p><strong>Role:</strong> ${match.data.user.role}</p>
+                    <p><strong>Bio:</strong> ${match.data.user.bio}</p>
+                </div>
+            `,
+                ),
+            );
+
+            // Route that will cause an error (for testing error handling)
+            const errorRoute = pipe(
+                route(path("error"), end),
+                loader(async () => {
+                    await new Promise((resolve) => setTimeout(resolve, 1000));
+                    throw new Error(
+                        "This is a test error to demonstrate error handling",
+                    );
+                }),
+                head({
+                    title: "Error Demo",
+                    titleTemplate: "Combi-Router | %s",
+                }),
+                view(
+                    ({ match }) =>
+                        `<div>This shouldn't render due to loader error</div>`,
+                ),
+            );
+
+            // =================================================================
+            // Router Setup with View Layer
+            // =================================================================
+
+            const router = createLayeredRouter([
+                homeRoute,
+                aboutRoute,
+                postsRoute,
+                postDetailRoute,
+                usersRoute,
+                userDetailRoute,
+                errorRoute,
+            ])(createCoreNavigationLayer())(
+                createViewLayer({
+                    root: "#app-root",
+                    loadingView: () => `
+                <div class="loading">
+                    Loading content, please wait...
+                </div>
+            `,
+                    errorView: (error) => `
+                <div class="error">
+                    <h3>Oops! Something went wrong</h3>
+                    <p>${error.message}</p>
+                    <a href="/" class="btn">Go Home</a>
+                </div>
+            `,
+                    notFoundView: () => `
+                <div class="error">
+                    <h3>404 - Page Not Found</h3>
+                    <p>The page you're looking for doesn't exist.</p>
+                    <a href="/" class="btn">Go Home</a>
+                </div>
+            `,
+                }),
+            )();
+
+            // =================================================================
+            // Additional Demo Features
+            // =================================================================
+
+            // Add some debug info in development
+            if (window.location.hostname === "localhost") {
+                window.router = router;
+                console.log("Router available as window.router for debugging");
+                console.log("Available routes:", router.getRouteTree());
+
+                // Add a debug panel
+                const debugPanel = document.createElement("div");
+                debugPanel.style.cssText = `
+                position: fixed;
+                bottom: 10px;
+                right: 10px;
+                background: #1f2937;
+                color: white;
+                padding: 10px;
+                border-radius: 8px;
+                font-family: monospace;
+                font-size: 12px;
+                z-index: 1000;
+                max-width: 300px;
+            `;
+
+                const updateDebugInfo = () => {
+                    const match = router.currentMatch;
+                    debugPanel.innerHTML = `
+                    <strong>Current Route:</strong><br>
+                    Path: ${match?.pathname || "None"}<br>
+                    Params: ${JSON.stringify(match?.params || {})}<br>
+                    <button onclick="router.rerender()" style="margin-top: 5px; padding: 2px 8px;">Rerender</button>
+                `;
+                };
+
+                router.subscribe(updateDebugInfo);
+                updateDebugInfo();
+                document.body.appendChild(debugPanel);
+            }
+
+            // Add navigation error handling for demonstration
+            router.onError((context) => {
+                console.error("Navigation error:", context);
+            });
+
+            console.log("🚀 Combi-Router View Layer Example loaded!");
+            console.log(
+                "Try navigating around using the links in the navigation bar.",
+            );
+            console.log(
+                "Notice how the app shows loading states and handles errors gracefully.",
+            );
+        </script>
+    </body>
+</html>

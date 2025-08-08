@@ -7,16 +7,16 @@
 //
 // =================================================================
 
-import type { 
-  Resource, 
-  ResourceStatus, 
-  AdvancedResource, 
-  ResourceConfig, 
+import type {
+  Resource,
+  ResourceStatus,
+  AdvancedResource,
+  ResourceConfig,
   ResourceEvent,
   RetryConfig,
-  GlobalResourceState 
-} from '../core/types';
-import { globalCache } from './cache';
+  GlobalResourceState,
+} from "../core/types";
+import { globalCache } from "./cache";
 
 // =================================================================
 // ----------------- SUSPENSE & RESOURCE IMPLEMENTATION -----------
@@ -48,20 +48,33 @@ export class SuspensePromise extends Promise<void> {}
  * const userData = user.read();
  */
 export function createResource<T>(promiseFn: () => Promise<T>): Resource<T> {
-  let status: ResourceStatus = 'pending';
+  let status: ResourceStatus = "pending";
   let result: T | any;
   let suspender = promiseFn().then(
-    (r) => { status = 'success'; result = r; },
-    (e) => { status = 'error'; result = e; }
+    (r) => {
+      status = "success";
+      result = r;
+    },
+    (e) => {
+      status = "error";
+      result = e;
+    },
   );
 
   return {
-    get status() { return status; },
+    get status() {
+      return status;
+    },
     read(): T {
       switch (status) {
-        case 'pending': throw new SuspensePromise((resolve) => suspender.then(resolve, resolve));
-        case 'error': throw result;
-        case 'success': return result as T;
+        case "pending":
+          throw new SuspensePromise((resolve) =>
+            suspender.then(resolve, resolve),
+          );
+        case "error":
+          throw result;
+        case "success":
+          return result as T;
       }
     },
   };
@@ -91,7 +104,7 @@ class ResourceManager {
       try {
         listener(event);
       } catch (error) {
-        console.error('[ResourceManager] Event listener error:', error);
+        console.error("[ResourceManager] Event listener error:", error);
       }
     }
   }
@@ -102,18 +115,22 @@ class ResourceManager {
   }
 
   getGlobalState(): GlobalResourceState {
-    const loadingResources = Array.from(this.resources).filter(r => r.isLoading);
+    const loadingResources = Array.from(this.resources).filter(
+      (r) => r.isLoading,
+    );
     return {
       loadingCount: loadingResources.length,
       isLoading: loadingResources.length > 0,
-      loadingResources
+      loadingResources,
     };
   }
 
   invalidateByTags(tags: string[]): number {
     let invalidated = 0;
     for (const resource of this.resources) {
-      if (resource.config.cache?.invalidateOn?.some(tag => tags.includes(tag))) {
+      if (
+        resource.config.cache?.invalidateOn?.some((tag) => tags.includes(tag))
+      ) {
         resource.invalidate();
         invalidated++;
       }
@@ -132,19 +149,21 @@ const defaultRetryConfig: Required<RetryConfig> = {
   delay: (attempt: number) => Math.min(1000 * Math.pow(2, attempt - 1), 10000),
   shouldRetry: (error: Error) => {
     // Retry on network errors, timeouts, and 5xx status codes
-    return error.name === 'TypeError' || // Network errors
-           error.message.includes('fetch') ||
-           error.message.includes('timeout') ||
-           (error as any)?.status >= 500;
+    return (
+      error.name === "TypeError" || // Network errors
+      error.message.includes("fetch") ||
+      error.message.includes("timeout") ||
+      (error as any)?.status >= 500
+    );
   },
-  onRetry: () => {}
+  onRetry: () => {},
 };
 
 /**
  * Implementation of AdvancedResource with all enhanced features.
  */
 class AdvancedResourceImpl<T> implements AdvancedResource<T> {
-  private _status: ResourceStatus = 'pending';
+  private _status: ResourceStatus = "pending";
   private _data: T | undefined;
   private _error: Error | undefined;
   private _lastFetched: Date | undefined;
@@ -156,7 +175,7 @@ class AdvancedResourceImpl<T> implements AdvancedResource<T> {
   constructor(
     private promiseFn: () => Promise<T>,
     public readonly config: ResourceConfig,
-    cacheKey?: string
+    cacheKey?: string,
   ) {
     this._cacheKey = cacheKey || this.generateCacheKey();
     resourceManager.register(this);
@@ -164,18 +183,22 @@ class AdvancedResourceImpl<T> implements AdvancedResource<T> {
   }
 
   // Basic Resource interface
-  get status(): ResourceStatus { return this._status; }
+  get status(): ResourceStatus {
+    return this._status;
+  }
 
   read(): T {
     switch (this._status) {
-      case 'pending':
+      case "pending":
         if (!this._suspender) {
           this._suspender = this.createSuspender();
         }
-        throw new SuspensePromise((resolve) => this._suspender!.then(resolve, resolve));
-      case 'error':
+        throw new SuspensePromise((resolve) =>
+          this._suspender!.then(resolve, resolve),
+        );
+      case "error":
         throw this._error;
-      case 'success':
+      case "success":
         // Check if data is stale and background refetch is enabled
         if (this.isStale && this.config.backgroundRefetch && !this._isLoading) {
           this.backgroundRefetch();
@@ -185,13 +208,19 @@ class AdvancedResourceImpl<T> implements AdvancedResource<T> {
   }
 
   // Enhanced Resource interface
-  get isLoading(): boolean { return this._isLoading; }
+  get isLoading(): boolean {
+    return this._isLoading;
+  }
   get isStale(): boolean {
     if (!this._lastFetched || !this.config.staleTime) return false;
-    return (Date.now() - this._lastFetched.getTime()) > this.config.staleTime;
+    return Date.now() - this._lastFetched.getTime() > this.config.staleTime;
   }
-  get lastFetched(): Date | undefined { return this._lastFetched; }
-  get error(): Error | undefined { return this._error; }
+  get lastFetched(): Date | undefined {
+    return this._lastFetched;
+  }
+  get error(): Error | undefined {
+    return this._error;
+  }
 
   async refetch(): Promise<T> {
     this.invalidate();
@@ -199,32 +228,32 @@ class AdvancedResourceImpl<T> implements AdvancedResource<T> {
   }
 
   invalidate(): void {
-    this._status = 'pending';
+    this._status = "pending";
     this._data = undefined;
     this._error = undefined;
     this._suspender = null;
     this._fetchPromise = null;
-    
+
     // Abort current fetch if in progress
     if (this._abortController) {
       this._abortController.abort();
       this._abortController = null;
     }
-    
+
     globalCache.delete(this._cacheKey);
-    
+
     this.emit({
-      type: 'invalidate',
+      type: "invalidate",
       resource: this,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
   }
 
   peek(): T | undefined {
-    if (this._status === 'success') {
+    if (this._status === "success") {
       return this._data;
     }
-    
+
     // Try cache
     const cached = globalCache.get<T>(this._cacheKey);
     return cached?.data;
@@ -234,7 +263,7 @@ class AdvancedResourceImpl<T> implements AdvancedResource<T> {
     // Check cache first
     const cached = globalCache.get<T>(this._cacheKey);
     if (cached && !this.isCacheExpired(cached)) {
-      this._status = 'success';
+      this._status = "success";
       this._data = cached.data;
       this._lastFetched = cached.timestamp;
       return;
@@ -255,16 +284,16 @@ class AdvancedResourceImpl<T> implements AdvancedResource<T> {
 
     this._isLoading = true;
     this._abortController = new AbortController();
-    
+
     this.emit({
-      type: 'fetch-start',
+      type: "fetch-start",
       resource: this,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
 
     this._fetchPromise = this.fetchWithRetry()
       .then((data) => {
-        this._status = 'success';
+        this._status = "success";
         this._data = data;
         this._error = undefined;
         this._lastFetched = new Date();
@@ -276,25 +305,25 @@ class AdvancedResourceImpl<T> implements AdvancedResource<T> {
         }
 
         this.emit({
-          type: 'fetch-success',
+          type: "fetch-success",
           resource: this,
           data,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
 
         this._fetchPromise = null;
         return data;
       })
       .catch((error) => {
-        this._status = 'error';
+        this._status = "error";
         this._error = error as Error;
         this._isLoading = false;
 
         this.emit({
-          type: 'fetch-error',
+          type: "fetch-error",
           resource: this,
           error: error as Error,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
 
         this._fetchPromise = null;
@@ -316,7 +345,7 @@ class AdvancedResourceImpl<T> implements AdvancedResource<T> {
     for (let attempt = 1; attempt <= retryConfig.attempts; attempt++) {
       try {
         if (this._abortController?.signal.aborted) {
-          throw new Error('Fetch aborted');
+          throw new Error("Fetch aborted");
         }
 
         return await this.promiseFn();
@@ -324,7 +353,10 @@ class AdvancedResourceImpl<T> implements AdvancedResource<T> {
         lastError = error as Error;
 
         // Don't retry if aborted or on last attempt
-        if (this._abortController?.signal.aborted || attempt === retryConfig.attempts) {
+        if (
+          this._abortController?.signal.aborted ||
+          attempt === retryConfig.attempts
+        ) {
           throw lastError;
         }
 
@@ -335,22 +367,23 @@ class AdvancedResourceImpl<T> implements AdvancedResource<T> {
 
         // Emit retry event
         this.emit({
-          type: 'retry',
+          type: "retry",
           resource: this,
           error: lastError,
           attempt,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
 
         // Call retry callback
         retryConfig.onRetry(lastError, attempt);
 
         // Wait before retrying
-        const delay = typeof retryConfig.delay === 'function' 
-          ? retryConfig.delay(attempt)
-          : retryConfig.delay;
-        
-        await new Promise(resolve => setTimeout(resolve, delay));
+        const delay =
+          typeof retryConfig.delay === "function"
+            ? retryConfig.delay(attempt)
+            : retryConfig.delay;
+
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
 
@@ -362,14 +395,14 @@ class AdvancedResourceImpl<T> implements AdvancedResource<T> {
       await this.fetch();
     } catch (error) {
       // Background refetch failures should not affect current state
-      console.warn('[AdvancedResource] Background refetch failed:', error);
+      console.warn("[AdvancedResource] Background refetch failed:", error);
     }
   }
 
   private createSuspender(): Promise<void> {
     return new Promise<void>((resolve) => {
       const checkStatus = () => {
-        if (this._status === 'success' || this._status === 'error') {
+        if (this._status === "success" || this._status === "error") {
           resolve();
         } else {
           setTimeout(checkStatus, 16); // Check every frame
@@ -430,7 +463,7 @@ class AdvancedResourceImpl<T> implements AdvancedResource<T> {
 export function createAdvancedResource<T>(
   promiseFn: () => Promise<T>,
   config: ResourceConfig = {},
-  cacheKey?: string
+  cacheKey?: string,
 ): AdvancedResource<T> {
   return new AdvancedResourceImpl(promiseFn, config, cacheKey);
 }
@@ -447,10 +480,16 @@ export const resourceState = {
   /**
    * Listen to resource events for observability.
    */
-  onEvent: (listener: (event: ResourceEvent) => void) => resourceManager.onEvent(listener),
+  onEvent: (listener: (event: ResourceEvent) => void) =>
+    resourceManager.onEvent(listener),
 
   /**
    * Invalidate all resources with specific cache tags.
    */
-  invalidateByTags: (tags: string[]) => resourceManager.invalidateByTags(tags)
+  invalidateByTags: (tags: string[]) => resourceManager.invalidateByTags(tags),
+
+  /**
+   * Get the resource manager instance (for advanced usage).
+   */
+  getManager: () => resourceManager,
 };

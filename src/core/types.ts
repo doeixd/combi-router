@@ -7,18 +7,18 @@
 //
 // =================================================================
 
-import type { StandardSchemaV1 } from '@standard-schema/spec';
-import type { Parser } from '@doeixd/combi-parse';
+import type { StandardSchemaV1 } from "@standard-schema/spec";
+import type { Parser } from "@doeixd/combi-parse";
 
 // Re-export for consumers
-export type { StandardSchemaV1 } from '@standard-schema/spec';
-export type { StandardSchemaV1 as StandardSchemaV1Namespace } from '@standard-schema/spec';
+export type { StandardSchemaV1 } from "@standard-schema/spec";
+export type { StandardSchemaV1 as StandardSchemaV1Namespace } from "@standard-schema/spec";
 
 // =================================================================
 // ----------------- SUSPENSE & RESOURCE TYPES -------------------
 // =================================================================
 
-export type ResourceStatus = 'pending' | 'success' | 'error';
+export type ResourceStatus = "pending" | "success" | "error";
 
 /**
  * A special wrapper for asynchronous data that enables suspense-like features.
@@ -62,7 +62,7 @@ export interface CacheConfig {
   /** Cache tags for targeted invalidation */
   invalidateOn?: string[];
   /** Cache priority level for memory management */
-  priority?: 'low' | 'normal' | 'high';
+  priority?: "low" | "normal" | "high";
 }
 
 /**
@@ -94,7 +94,7 @@ export interface AdvancedResource<T> extends Resource<T> {
   readonly lastFetched?: Date;
   /** Last error that occurred, if any */
   readonly error?: Error;
-  
+
   // Control methods
   /** Manually refetch the data, bypassing cache */
   refetch(): Promise<T>;
@@ -102,7 +102,7 @@ export interface AdvancedResource<T> extends Resource<T> {
   invalidate(): void;
   /** Non-suspending read that returns undefined if not available */
   peek(): T | undefined;
-  
+
   // Configuration
   /** The configuration used for this resource */
   readonly config: ResourceConfig;
@@ -112,7 +112,13 @@ export interface AdvancedResource<T> extends Resource<T> {
  * Events emitted by enhanced resources for observability.
  */
 export interface ResourceEvent<T = any> {
-  type: 'fetch-start' | 'fetch-success' | 'fetch-error' | 'retry' | 'invalidate' | 'stale';
+  type:
+    | "fetch-start"
+    | "fetch-success"
+    | "fetch-error"
+    | "retry"
+    | "invalidate"
+    | "stale";
   resource: AdvancedResource<T>;
   data?: T;
   error?: Error;
@@ -139,7 +145,7 @@ export interface CacheEntry<T = any> {
   data: T;
   timestamp: Date;
   expires: number;
-  priority: 'low' | 'normal' | 'high';
+  priority: "low" | "normal" | "high";
   tags: string[];
   accessCount: number;
   lastAccessed: Date;
@@ -184,7 +190,14 @@ export interface RouteMatch<TParams = any> {
 
 /** The internal representation of a route building block (matcher). @internal */
 export interface RouteMatcher {
-  readonly type: 'path' | 'param' | 'query' | 'end' | 'optionalPath' | 'wildcard' | 'meta';
+  readonly type:
+    | "path"
+    | "param"
+    | "query"
+    | "end"
+    | "optionalPath"
+    | "wildcard"
+    | "meta";
   readonly parser: Parser<any>;
   readonly paramName?: string;
   readonly schema?: StandardSchemaV1<any, any>;
@@ -196,10 +209,19 @@ export interface RouteMetadata {
   title?: string | ((params: any, data?: any) => string);
   loader?: (context: LoaderContext<any>) => Promise<any> | any;
   layout?: any;
-  lazy?: { import: () => Promise<{ default: any }>; preload?: 'hover' | 'visible' | 'immediate' | 'none'; fallback?: any; };
+  lazy?: {
+    import: () => Promise<{ default: any }>;
+    preload?: "hover" | "visible" | "immediate" | "none";
+    fallback?: any;
+  };
   guards?: RouteGuard[];
   errorBoundary?: any;
-  cache?: { key?: (params: any) => string; ttl: number; staleWhileRevalidate?: boolean; };
+  cache?: {
+    key?: (params: any) => string;
+    ttl: number;
+    staleWhileRevalidate?: boolean;
+  };
+  view?: ViewFactory;
   [key: string]: any;
 }
 
@@ -211,7 +233,25 @@ export interface LoaderContext<TParams = any> {
 }
 
 /** A route guard function. Return `true` to allow, `false` to block, or a URL string to redirect. */
-export type RouteGuard = (context: { to: RouteMatch<any>, from: RouteMatch<any> | null }) => Promise<boolean | string> | boolean | string;
+export type RouteGuard = (context: {
+  to: RouteMatch<any>;
+  from: RouteMatch<any> | null;
+}) => Promise<boolean | string> | boolean | string;
+
+// =================================================================
+// ----------------------- VIEW TYPES -----------------------------
+// =================================================================
+
+/** The context object passed to a ViewFactory function. */
+export interface ViewContext<TParams = any> {
+  /** The full RouteMatch object, containing params, loaded data, etc. */
+  match: RouteMatch<TParams>;
+}
+
+/** A function that returns a renderable string or DOM Node for a given route match. */
+export type ViewFactory<TParams = any> = (
+  context: ViewContext<TParams>,
+) => string | Node;
 
 /** The context passed to the global error handler `router.onError`. */
 export interface ErrorContext {
@@ -249,7 +289,7 @@ export interface HeadManagementConfig {
 // Forward declarations for production features
 export interface ScrollRestorationConfig {
   enabled: boolean;
-  strategy: 'auto' | 'manual' | 'smooth';
+  strategy: "auto" | "manual" | "smooth";
   restoreOnBack: boolean;
   saveDelay?: number;
   maxPositions?: number;
@@ -258,26 +298,31 @@ export interface ScrollRestorationConfig {
 }
 
 export interface CodeSplittingConfig {
-  strategy: 'route-based' | 'feature-based' | 'hybrid';
-  preloadStrategy: 'hover' | 'visible' | 'immediate' | 'none';
+  strategy: "route-based" | "feature-based" | "hybrid";
+  preloadStrategy: "hover" | "visible" | "immediate" | "none";
   chunkNaming?: (route: Route) => string;
   fallback?: any;
   errorBoundary?: any;
   preloadTimeout?: number;
   retryAttempts?: number;
   retryDelay?: number;
-  priority?: 'high' | 'low' | 'auto';
+  priority?: "high" | "low" | "auto";
   connectionAware?: boolean;
 }
 
 export interface TransitionConfig {
   enabled: boolean;
-  type: 'view-transitions' | 'custom' | 'fade' | 'slide' | 'none';
+  type: "view-transitions" | "custom" | "fade" | "slide" | "none";
   duration?: number;
   easing?: string;
   customTransition?: (context: TransitionContext) => Promise<void> | void;
   skipSameRoute?: boolean;
-  fallbackTransition?: 'view-transitions' | 'custom' | 'fade' | 'slide' | 'none';
+  fallbackTransition?:
+    | "view-transitions"
+    | "custom"
+    | "fade"
+    | "slide"
+    | "none";
   debugMode?: boolean;
   respectPreferences?: boolean;
 }
@@ -285,7 +330,7 @@ export interface TransitionConfig {
 export interface TransitionContext {
   from: RouteMatch | null;
   to: RouteMatch;
-  direction: 'forward' | 'back' | 'replace';
+  direction: "forward" | "back" | "replace";
   isInitial: boolean;
   element?: Element;
 }
@@ -302,7 +347,7 @@ export interface PerformanceConfig {
   prefetchOnHover: boolean;
   prefetchViewport: boolean;
   navigationTimeout: number;
-  resourcePriority: 'high' | 'low' | 'auto';
+  resourcePriority: "high" | "low" | "auto";
   memoryManagement: {
     enabled: boolean;
     maxCacheSize: number;
@@ -321,20 +366,23 @@ export interface PerformanceConfig {
 
 /** Error thrown when route validation fails during creation */
 export class RouteValidationError extends Error {
-  constructor(message: string, public readonly details?: any) {
+  constructor(
+    message: string,
+    public readonly details?: any,
+  ) {
     super(message);
-    this.name = 'RouteValidationError';
+    this.name = "RouteValidationError";
   }
 }
 
 /** Types of navigation errors that can occur */
 export enum NavigationErrorType {
-  RouteNotFound = 'route-not-found',
-  GuardRejected = 'guard-rejected', 
-  LoaderFailed = 'loader-failed',
-  ValidationFailed = 'validation-failed',
-  Cancelled = 'cancelled',
-  Unknown = 'unknown'
+  RouteNotFound = "route-not-found",
+  GuardRejected = "guard-rejected",
+  LoaderFailed = "loader-failed",
+  ValidationFailed = "validation-failed",
+  Cancelled = "cancelled",
+  Unknown = "unknown",
 }
 
 /** Detailed information about a navigation error */
@@ -356,7 +404,7 @@ export interface NavigationResult {
 
 /** Controller for managing ongoing navigation */
 export interface NavigationController {
-  readonly id?: number;  // Optional id for tracking concurrent navigations
+  readonly id?: number; // Optional id for tracking concurrent navigations
   readonly url?: string;
   readonly route?: Route<any>;
   readonly params?: any;
@@ -379,7 +427,9 @@ export interface GuardContext<TParams = any> {
 export type GuardResult = boolean | string | Promise<boolean | string>;
 
 /** A typed route guard with better type safety */
-export type TypedRouteGuard<TParams = any> = (context: GuardContext<TParams>) => GuardResult;
+export type TypedRouteGuard<TParams = any> = (
+  context: GuardContext<TParams>,
+) => GuardResult;
 
 // =================================================================
 // --------------------- TYPE UTILITIES ---------------------------
@@ -389,35 +439,54 @@ export type TypedRouteGuard<TParams = any> = (context: GuardContext<TParams>) =>
  * Enhanced type inference for StandardSchema types.
  * Infers the output type from a StandardSchema, providing better type safety.
  */
-export type InferSchemaType<S> = S extends StandardSchemaV1<any, infer O> ? O : never;
+export type InferSchemaType<S> =
+  S extends StandardSchemaV1<any, infer O> ? O : never;
 
 /**
  * Validates parameter types at compile-time using StandardSchema inference.
  * Ensures type safety for route parameter validation.
  */
-export type ValidateParams<T> = T extends Record<string, StandardSchemaV1<any, any>> 
-  ? { [K in keyof T]: InferSchemaType<T[K]> }
-  : T;
+export type ValidateParams<T> =
+  T extends Record<string, StandardSchemaV1<any, any>>
+    ? { [K in keyof T]: InferSchemaType<T[K]> }
+    : T;
 
-type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never;
+type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
+  k: infer I,
+) => void
+  ? I
+  : never;
 
 /**
  * Enhanced matcher parameter inference with better StandardSchema integration.
  * Handles all matcher types with improved type safety.
  */
-type InferMatcherParam<T extends RouteMatcher> = T extends { paramName: infer N; schema: StandardSchemaV1<any, infer S> }
-  ? N extends string ? { [K in N]: S } : {}
-  : T extends { type: 'optionalPath', paramName: infer N }
-  ? N extends string ? { [K in N]?: boolean } : {}
-  : T extends { type: 'wildcard', paramName: infer N }
-  ? N extends string ? { [K in N]: string[] } : {}
-  : {};
+type InferMatcherParam<T extends RouteMatcher> = T extends {
+  paramName: infer N;
+  schema: StandardSchemaV1<any, infer S>;
+}
+  ? N extends string
+    ? { [K in N]: S }
+    : {}
+  : T extends { type: "optionalPath"; paramName: infer N }
+    ? N extends string
+      ? { [K in N]?: boolean }
+      : {}
+    : T extends { type: "wildcard"; paramName: infer N }
+      ? N extends string
+        ? { [K in N]: string[] }
+        : {}
+      : {};
 
-export type InferMatcherParams<T extends RouteMatcher[]> = UnionToIntersection<{ [K in keyof T]: T[K] extends RouteMatcher ? InferMatcherParam<T[K]> : never }[number]>;
+export type InferMatcherParams<T extends RouteMatcher[]> = UnionToIntersection<
+  {
+    [K in keyof T]: T[K] extends RouteMatcher ? InferMatcherParam<T[K]> : never;
+  }[number]
+>;
 
-// Forward declaration for circular dependency resolution  
+// Forward declaration for circular dependency resolution
 // The actual Route class is defined in ./route.ts
 export type Route<TParams = any> = any & { _phantom?: TParams };
 
 // Re-export from combi-parse for convenience
-export type { Parser, Success } from '@doeixd/combi-parse';
+export type { Parser, Success } from "@doeixd/combi-parse";
