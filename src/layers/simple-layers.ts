@@ -6,41 +6,41 @@
 //
 // =================================================================
 
-import type { ComposableRouterApi } from '../core/make-layered';
+import type { ComposableRouterApi } from "../core/make-layered";
 
 /**
  * Authentication layer that adds login/logout functionality
  */
 export function createAuthLayer() {
   let currentUser: any = null;
-  
-  return function authLayer(router: ComposableRouterApi) {
+
+  return function authLayer() {
     return {
       // Authentication state
       get currentUser() {
         return currentUser;
       },
-      
+
       // Authentication methods
       isAuthenticated(): boolean {
         return currentUser !== null;
       },
-      
+
       login(user: any): void {
         currentUser = user;
       },
-      
+
       logout(): void {
         currentUser = null;
       },
-      
+
       requireAuth(routeId: string): boolean {
         if (!this.isAuthenticated()) {
           console.warn(`Authentication required for route: ${routeId}`);
           return false;
         }
         return true;
-      }
+      },
     };
   };
 }
@@ -50,25 +50,25 @@ export function createAuthLayer() {
  */
 export function createLoggingLayer() {
   const logs: string[] = [];
-  
+
   return function loggingLayer(router: ComposableRouterApi) {
     return {
       // Logging methods
       getNavigationLogs(): string[] {
         return [...logs];
       },
-      
+
       clearLogs(): void {
         logs.length = 0;
       },
-      
+
       // Enhanced navigation with logging
       async navigate(path: string, options?: any): Promise<boolean> {
         logs.push(`Navigating to: ${path}`);
         const result = await router.navigate(path, options);
-        logs.push(`Navigation ${result ? 'succeeded' : 'failed'}: ${path}`);
+        logs.push(`Navigation ${result ? "succeeded" : "failed"}: ${path}`);
         return result;
-      }
+      },
     };
   };
 }
@@ -78,22 +78,22 @@ export function createLoggingLayer() {
  */
 export function createCachingLayer() {
   const cache = new Map<string, any>();
-  
-  return function cachingLayer(router: ComposableRouterApi) {
+
+  return function cachingLayer(_router: ComposableRouterApi) {
     return {
       // Cache methods
       getCached(key: string): any {
         return cache.get(key);
       },
-      
+
       setCached(key: string, value: any): void {
         cache.set(key, value);
       },
-      
+
       clearCache(): void {
         cache.clear();
       },
-      
+
       // Route prefetching with caching
       async prefetchRoute(routeId: string): Promise<void> {
         if (!cache.has(routeId)) {
@@ -101,7 +101,7 @@ export function createCachingLayer() {
           console.log(`Prefetching route: ${routeId}`);
           cache.set(routeId, { prefetched: true, timestamp: Date.now() });
         }
-      }
+      },
     };
   };
 }
@@ -109,9 +109,9 @@ export function createCachingLayer() {
 /**
  * Analytics layer that tracks user interactions
  */
-export function createAnalyticsLayer(config: { trackingId?: string } = {}) {
+export function createAnalyticsLayer(_config: { trackingId?: string } = {}) {
   const events: any[] = [];
-  
+
   return function analyticsLayer(router: ComposableRouterApi) {
     return {
       // Analytics methods
@@ -120,18 +120,18 @@ export function createAnalyticsLayer(config: { trackingId?: string } = {}) {
           name: eventName,
           data,
           timestamp: Date.now(),
-          route: router.currentMatch?.route?.id
+          route: router.currentMatch?.route?.id,
         });
         console.log(`[Analytics] ${eventName}`, data);
       },
-      
+
       getEvents(): any[] {
         return [...events];
       },
-      
+
       clearEvents(): void {
         events.length = 0;
-      }
+      },
     };
   };
 }
@@ -141,14 +141,14 @@ export function createAnalyticsLayer(config: { trackingId?: string } = {}) {
  */
 export function createPerformanceLayer() {
   const metrics = new Map<string, number>();
-  
-  return function performanceLayer(router: ComposableRouterApi) {
+
+  return function performanceLayer(_router: ComposableRouterApi) {
     return {
       // Performance methods
       startTimer(name: string): void {
         metrics.set(`${name}_start`, performance.now());
       },
-      
+
       endTimer(name: string): number {
         const start = metrics.get(`${name}_start`);
         if (start) {
@@ -158,16 +158,16 @@ export function createPerformanceLayer() {
         }
         return 0;
       },
-      
+
       getMetrics(): Record<string, number> {
         const result: Record<string, number> = {};
         for (const [key, value] of metrics) {
-          if (!key.endsWith('_start')) {
+          if (!key.endsWith("_start")) {
             result[key] = value;
           }
         }
         return result;
-      }
+      },
     };
   };
 }
@@ -184,27 +184,30 @@ export function createFeatureLayer(features: {
 }) {
   return function featureLayer(router: ComposableRouterApi) {
     const extensions: any = {};
-    
+
     if (features.auth) {
-      Object.assign(extensions, createAuthLayer()(router));
+      Object.assign(extensions, createAuthLayer()());
     }
-    
+
     if (features.logging) {
       Object.assign(extensions, createLoggingLayer()(router));
     }
-    
+
     if (features.caching) {
       Object.assign(extensions, createCachingLayer()(router));
     }
-    
+
     if (features.analytics) {
-      Object.assign(extensions, createAnalyticsLayer(features.analytics)(router));
+      Object.assign(
+        extensions,
+        createAnalyticsLayer(features.analytics)(router),
+      );
     }
-    
+
     if (features.performance) {
       Object.assign(extensions, createPerformanceLayer()(router));
     }
-    
+
     return extensions;
   };
 }

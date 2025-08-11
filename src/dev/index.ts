@@ -526,12 +526,7 @@ export function exposeDevTools(
 // ---------------- TYPE EXPORTS ---------------------------------
 // =================================================================
 
-export type {
-  DevModeConfig,
-  DevModeFeatures,
-  WarningConfig,
-  PerformanceConfig,
-};
+export type { WarningConfig, PerformanceConfig };
 
 // Re-export all types from individual modules
 export type { DevWarning, WarningType, WarningSeverity } from "./warnings";

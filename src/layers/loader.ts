@@ -108,7 +108,7 @@ export function createLoaderLayer(
 ): RouterLayer<RouterContext, LoaderLayerExtensions> {
   const {
     loaderTimeout = 10000,
-    parallelLoading = true,
+    parallelLoading: _parallelLoading = true,
     cacheLoaderResults = false,
     defaultCacheTTL = 300000,
     debug = false,
@@ -303,7 +303,7 @@ export function createLoaderLayer(
      */
     async function onBeforeNavigationComplete(
       match: RouteMatch,
-      isPopState: boolean,
+      _isPopState: boolean,
     ): Promise<RouteMatch> {
       debugLog(`Before navigation complete for route ${match.route.id}`, {
         hasData: !!match.data,
@@ -330,7 +330,7 @@ export function createLoaderLayer(
     /**
      * Handle navigation start - prepare for loading.
      */
-    async function onNavigationStart(context: any) {
+    async function onNavigationStart(_context: any) {
       debugLog(`Navigation starting`);
       isCurrentlyLoading = true;
     }
@@ -340,7 +340,7 @@ export function createLoaderLayer(
      */
     async function onNavigationComplete(
       match: RouteMatch,
-      isPopState: boolean,
+      _isPopState: boolean,
     ) {
       debugLog(`Navigation completed for route ${match.route.id}`, {
         hasData: !!match.data,
@@ -352,7 +352,7 @@ export function createLoaderLayer(
     /**
      * Handle navigation errors - clean up loading state.
      */
-    async function onNavigationError(error: any, context: any) {
+    async function onNavigationError(error: any, _context: any) {
       debugLog(`Navigation error occurred:`, error);
       isCurrentlyLoading = false;
 

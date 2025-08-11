@@ -7,7 +7,7 @@
 //
 // =================================================================
 
-import { Parser, sequence } from "@doeixd/combi-parse";
+import { Parser, sequence, failure } from "@doeixd/combi-parse";
 import type { RouteMatcher } from "./types";
 
 // =================================================================
@@ -25,11 +25,7 @@ export function buildRouteParser(
   // Defensive check for matchers
   if (!matchers || matchers.length === 0) {
     console.warn("[Parser] No matchers provided to buildRouteParser");
-    return new Parser((state) => ({
-      type: "failure",
-      error: "No matchers",
-      state,
-    }));
+    return new Parser((state) => failure("No matchers", state));
   }
 
   // Separate path-related matchers from query parameter declarations
@@ -56,11 +52,7 @@ export function buildRouteParser(
   // Check if we have valid parsers
   if (pathMatchers.length === 0) {
     console.warn("[Parser] No path matchers with valid parsers");
-    return new Parser((state) => ({
-      type: "failure",
-      error: "No valid path matchers",
-      state,
-    }));
+    return new Parser((state) => failure("No valid path matchers", state));
   }
 
   // Build path parser that combines all path-related results into a single object

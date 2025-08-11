@@ -727,7 +727,9 @@ export class CombiRouter {
     return { pathParams, queryParams };
   }
 
-  private async _loadDataForMatchTree(
+  // Unused method - kept for potential future use
+  // @ts-ignore
+  private async __loadDataForMatchTree(
     match: RouteMatch,
     signal: AbortSignal,
   ): Promise<void> {

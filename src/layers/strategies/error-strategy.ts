@@ -240,7 +240,7 @@ export type ErrorStrategyConfig =
  */
 export function createErrorStrategy(
   config: ErrorStrategyConfig = "throw",
-  selectiveOptions?: Parameters<typeof SelectiveErrorStrategy>[0],
+  selectiveOptions?: ConstructorParameters<typeof SelectiveErrorStrategy>[0],
 ): ErrorStrategy {
   if (typeof config === "string") {
     switch (config) {
@@ -293,6 +293,7 @@ export const ErrorStrategies = {
    * Create a selective strategy with custom options.
    * Use when you need fine-grained control over different error types.
    */
-  selective: (options?: Parameters<typeof SelectiveErrorStrategy>[0]) =>
-    new SelectiveErrorStrategy(options),
+  selective: (
+    options?: ConstructorParameters<typeof SelectiveErrorStrategy>[0],
+  ) => new SelectiveErrorStrategy(options),
 } as const;

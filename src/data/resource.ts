@@ -16,6 +16,9 @@ import type {
   RetryConfig,
   GlobalResourceState,
 } from "../core/types";
+
+// Re-export types for external use
+export type { Resource, AdvancedResource, ResourceConfig, GlobalResourceState };
 import { globalCache } from "./cache";
 
 // =================================================================

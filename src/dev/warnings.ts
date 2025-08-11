@@ -115,9 +115,11 @@ export class DevWarningSystem {
   private getRoutes(): any[] {
     // Handle both CombiRouter (routes as array) and layered router (routes as function)
     if (typeof this.router.routes === "function") {
-      return this.router.routes();
+      // For layered routers, routes are not directly accessible
+      // Return empty array to avoid errors - layered routers handle their own validation
+      return [];
     }
-    return this.router.routes || [];
+    return [...(this.router.routes || [])];
   }
 
   // =================================================================
@@ -186,7 +188,7 @@ export class DevWarningSystem {
     >();
 
     routes.forEach((route) => {
-      const staticParts = route.staticPath.split("/").filter((p) => p);
+      const staticParts = route.staticPath.split("/").filter((p: string) => p);
       const key = staticParts.slice(0, -1).join("/"); // All but last segment
 
       if (!pathGroups.has(key)) {
@@ -253,7 +255,7 @@ export class DevWarningSystem {
 
     routes.forEach((route) => {
       // Check for routes that might be unreachable due to wildcards
-      const hasWildcardAncestor = route.ancestors.some((ancestor) =>
+      const hasWildcardAncestor = route.ancestors.some((ancestor: any) =>
         ancestor.matchers.some((matcher: any) => matcher.type === "wildcard"),
       );
 

@@ -82,16 +82,22 @@ export function createNestedRouter(config: NestedRouterConfig): {
   renderChild: (match: RouteMatch | null, outlet?: HTMLElement) => void;
   destroy: () => void;
 } {
-  const { parentRoute, childRoutes, outlet: outletConfig, autoManageOutlet = true } = config;
+  const {
+    parentRoute,
+    childRoutes,
+    outlet: outletConfig,
+    autoManageOutlet = true,
+  } = config;
   const outlets = new Map<string, RouterOutlet>();
   const cleanupFunctions: (() => void)[] = [];
 
   // Resolve outlet element if provided
   let outletElement: HTMLElement | null = null;
   if (outletConfig) {
-    outletElement = typeof outletConfig === 'string'
-      ? document.querySelector<HTMLElement>(outletConfig)
-      : outletConfig;
+    outletElement =
+      typeof outletConfig === "string"
+        ? document.querySelector<HTMLElement>(outletConfig)
+        : outletConfig;
   }
 
   /**
@@ -116,10 +122,13 @@ export function createNestedRouter(config: NestedRouterConfig): {
   /**
    * Render a child route into an outlet
    */
-  const renderChild = (match: RouteMatch | null, outlet?: HTMLElement): void => {
+  const renderChild = (
+    match: RouteMatch | null,
+    outlet?: HTMLElement,
+  ): void => {
     const targetOutlet = outlet || outletElement;
     if (!targetOutlet) {
-      console.warn('[NestedRouter] No outlet element available for rendering');
+      console.warn("[NestedRouter] No outlet element available for rendering");
       return;
     }
 
@@ -127,32 +136,36 @@ export function createNestedRouter(config: NestedRouterConfig): {
 
     if (!childMatch) {
       // Clear the outlet
-      targetOutlet.innerHTML = '';
+      targetOutlet.innerHTML = "";
       return;
     }
 
     // Find the matching child route
-    const childRoute = childRoutes.find(r => r.id === childMatch.route.id);
+    const childRoute = childRoutes.find((r) => r.id === childMatch.route.id);
     if (!childRoute) {
-      console.warn(`[NestedRouter] No child route found for match ${childMatch.route.id}`);
+      console.warn(
+        `[NestedRouter] No child route found for match ${childMatch.route.id}`,
+      );
       return;
     }
 
     // Get the view factory
-    const viewFactory = childMatch.route.metadata?.view as EnhancedViewFactory | undefined;
+    const viewFactory = childMatch.route.metadata?.view as
+      | EnhancedViewFactory
+      | undefined;
     if (viewFactory) {
       try {
         const content = viewFactory({ match: childMatch });
 
-        if (typeof content === 'string') {
+        if (typeof content === "string") {
           targetOutlet.innerHTML = content;
         } else if (content instanceof Node) {
-          targetOutlet.innerHTML = '';
+          targetOutlet.innerHTML = "";
           targetOutlet.appendChild(content);
         }
       } catch (error) {
-        console.error('[NestedRouter] Error rendering child view:', error);
-        targetOutlet.innerHTML = '<div>Error rendering view</div>';
+        console.error("[NestedRouter] Error rendering child view:", error);
+        targetOutlet.innerHTML = "<div>Error rendering view</div>";
       }
     }
   };
@@ -162,10 +175,10 @@ export function createNestedRouter(config: NestedRouterConfig): {
     const outlet: RouterOutlet = {
       element: outletElement,
       parentRouteId: parentRoute.id,
-      render: (match) => renderChild(match, outletElement)
+      render: (match) => renderChild(match, outletElement),
     };
 
-    outlets.set('default', outlet);
+    outlets.set("default", outlet);
   }
 
   return {
@@ -175,9 +188,9 @@ export function createNestedRouter(config: NestedRouterConfig): {
     findChildMatch,
     renderChild,
     destroy: () => {
-      cleanupFunctions.forEach(fn => fn());
+      cleanupFunctions.forEach((fn) => fn());
       outlets.clear();
-    }
+    },
   };
 }
 
@@ -199,7 +212,7 @@ export function createNestedRouter(config: NestedRouterConfig): {
  */
 export function createRouterOutlet(
   router: ComposableRouter<any>,
-  config: OutletConfig
+  config: OutletConfig,
 ): RouterOutlet & {
   update: (match: RouteMatch | null) => void;
   clear: () => void;
@@ -212,18 +225,20 @@ export function createRouterOutlet(
     transition,
     preserveScroll = false,
     loadingView,
-    errorView
+    errorView,
   } = config;
 
-  let currentMatch: RouteMatch | null = null;
   let currentView: Node | null = null;
   let isTransitioning = false;
 
   /**
    * Apply transition classes to an element
    */
-  const applyTransition = (el: Element, type: 'enter' | 'leave'): Promise<void> => {
-    return new Promise(resolve => {
+  const applyTransition = (
+    el: Element,
+    type: "enter" | "leave",
+  ): Promise<void> => {
+    return new Promise((resolve) => {
       if (!transition || !transition[type]) {
         resolve();
         return;
@@ -248,10 +263,10 @@ export function createRouterOutlet(
     // Handle loading state
     if (router.isFetching && loadingView) {
       const loading = loadingView();
-      if (typeof loading === 'string') {
+      if (typeof loading === "string") {
         element.innerHTML = loading;
       } else {
-        element.innerHTML = '';
+        element.innerHTML = "";
         element.appendChild(loading);
       }
       return;
@@ -260,9 +275,9 @@ export function createRouterOutlet(
     // Clear if no match
     if (!match) {
       if (currentView && transition?.leave) {
-        await applyTransition(element, 'leave');
+        await applyTransition(element, "leave");
       }
-      element.innerHTML = '';
+      element.innerHTML = "";
       currentView = null;
       return;
     }
@@ -284,16 +299,20 @@ export function createRouterOutlet(
     }
 
     if (!childMatch) {
-      element.innerHTML = '';
+      element.innerHTML = "";
       currentView = null;
       return;
     }
 
     // Get the view factory
-    const viewFactory = childMatch.route.metadata?.view as EnhancedViewFactory | undefined;
+    const viewFactory = childMatch.route.metadata?.view as
+      | EnhancedViewFactory
+      | undefined;
 
     if (!viewFactory) {
-      console.warn(`[RouterOutlet] No view factory for route ${childMatch.route.id}`);
+      console.warn(
+        `[RouterOutlet] No view factory for route ${childMatch.route.id}`,
+      );
       return;
     }
 
@@ -301,16 +320,16 @@ export function createRouterOutlet(
       // Apply leave transition to old content
       if (currentView && transition?.leave) {
         isTransitioning = true;
-        await applyTransition(element, 'leave');
+        await applyTransition(element, "leave");
       }
 
       // Render new content
       const content = await viewFactory({ match: childMatch });
 
       // Clear and update
-      element.innerHTML = '';
+      element.innerHTML = "";
 
-      if (typeof content === 'string') {
+      if (typeof content === "string") {
         element.innerHTML = content;
         currentView = element.firstChild as Node;
       } else if (content instanceof Node) {
@@ -320,7 +339,7 @@ export function createRouterOutlet(
 
       // Apply enter transition
       if (transition?.enter && currentView) {
-        await applyTransition(element, 'enter');
+        await applyTransition(element, "enter");
       }
 
       isTransitioning = false;
@@ -329,20 +348,21 @@ export function createRouterOutlet(
       if (!preserveScroll) {
         element.scrollTop = 0;
       }
-
     } catch (error) {
-      console.error('[RouterOutlet] Error rendering view:', error);
+      console.error("[RouterOutlet] Error rendering view:", error);
 
       if (errorView) {
-        const errorContent = errorView(error instanceof Error ? error : new Error(String(error)));
-        if (typeof errorContent === 'string') {
+        const errorContent = errorView(
+          error instanceof Error ? error : new Error(String(error)),
+        );
+        if (typeof errorContent === "string") {
           element.innerHTML = errorContent;
         } else {
-          element.innerHTML = '';
+          element.innerHTML = "";
           element.appendChild(errorContent);
         }
       } else {
-        element.innerHTML = '<div>Error rendering view</div>';
+        element.innerHTML = "<div>Error rendering view</div>";
       }
 
       isTransitioning = false;
@@ -353,8 +373,6 @@ export function createRouterOutlet(
    * The render function called by the router
    */
   const render = (match: RouteMatch | null): void => {
-    currentMatch = match;
-
     if (customRender) {
       customRender(match, element);
     } else {
@@ -375,9 +393,8 @@ export function createRouterOutlet(
    * Clear the outlet content
    */
   const clear = (): void => {
-    element.innerHTML = '';
+    element.innerHTML = "";
     currentView = null;
-    currentMatch = null;
   };
 
   /**
@@ -402,7 +419,7 @@ export function createRouterOutlet(
     destroy: () => {
       unsubscribe();
       destroy();
-    }
+    },
   };
 }
 
@@ -411,7 +428,7 @@ export function createRouterOutlet(
  */
 export function findOutlets(
   container: HTMLElement,
-  attribute: string = 'router-outlet'
+  attribute: string = "router-outlet",
 ): HTMLElement[] {
   return Array.from(container.querySelectorAll(`[${attribute}]`));
 }
@@ -421,9 +438,9 @@ export function findOutlets(
  */
 export function setupAutoOutlets(
   router: ComposableRouter<any>,
-  routes: Route<any>[],
+  _routes: Route<any>[],
   container: HTMLElement = document.body,
-  attribute: string = 'router-outlet'
+  attribute: string = "router-outlet",
 ): () => void {
   const outlets: RouterOutlet[] = [];
   const cleanupFunctions: (() => void)[] = [];
@@ -431,7 +448,7 @@ export function setupAutoOutlets(
   // Find all outlet elements
   const outletElements = findOutlets(container, attribute);
 
-  outletElements.forEach(element => {
+  outletElements.forEach((element) => {
     const parentId = element.getAttribute(`${attribute}-parent`);
     const parentRouteId = parentId ? parseInt(parentId) : undefined;
 
@@ -441,9 +458,11 @@ export function setupAutoOutlets(
       transition: {
         enter: element.getAttribute(`${attribute}-enter`) || undefined,
         leave: element.getAttribute(`${attribute}-leave`) || undefined,
-        duration: parseInt(element.getAttribute(`${attribute}-duration`) || '300')
+        duration: parseInt(
+          element.getAttribute(`${attribute}-duration`) || "300",
+        ),
       },
-      preserveScroll: element.hasAttribute(`${attribute}-preserve-scroll`)
+      preserveScroll: element.hasAttribute(`${attribute}-preserve-scroll`),
     });
 
     outlets.push(outlet);
@@ -452,7 +471,7 @@ export function setupAutoOutlets(
 
   // Return cleanup function
   return () => {
-    cleanupFunctions.forEach(fn => fn());
+    cleanupFunctions.forEach((fn) => fn());
   };
 }
 
@@ -466,18 +485,18 @@ export function createRouteGroup(
     view: EnhancedViewFactory<any>;
     loader?: (context: any) => Promise<any>;
     guards?: any[];
-  }>
+  }>,
 ): Route<any>[] {
   // This would need the actual route building functions
   // Simplified version for demonstration
-  return childConfigs.map(config => {
+  return childConfigs.map((config) => {
     // In practice, you'd use extend() and other route builders here
     const childRoute = Object.create(parentRoute);
     childRoute.metadata = {
       ...parentRoute.metadata,
       view: config.view,
       loader: config.loader,
-      guards: config.guards
+      guards: config.guards,
     };
     return childRoute;
   });

@@ -4,11 +4,11 @@
  *
  * @copyright 2025
  * @license MIT
- * 
+ *
  * @example
  * // Import the standalone components
  * import '@doeixd/combi-router/components-standalone';
- * 
+ *
  * // Use in HTML
  * <view-area match="/users/:id" view-id="user-detail"></view-area>
  * <template is="view-template" view-id="user-detail">
@@ -25,8 +25,12 @@ import {
   RouteMatch,
   StandardSchemaV1,
   Route as CombiRoute,
-} from './index';
-import { HeadManager, resolveHeadData, mergeHeadData } from './features/head.js';
+} from "./index";
+import {
+  HeadManager,
+  resolveHeadData,
+  mergeHeadData,
+} from "./features/head.js";
 
 // --- Shared Router Manager ---
 
@@ -38,8 +42,14 @@ import { HeadManager, resolveHeadData, mergeHeadData } from './features/head.js'
 const RouterManager = (() => {
   let routerInstance: CombiRouter | undefined;
   const routeDefinitions = new Map<ViewArea, CombiRoute>();
-  const guardDefinitions = new Map<string, () => Promise<(match: RouteMatch) => boolean | string>>();
-  const loaderDefinitions = new Map<string, () => Promise<(match: RouteMatch) => any>>();
+  const guardDefinitions = new Map<
+    string,
+    () => Promise<(match: RouteMatch) => boolean | string>
+  >();
+  const loaderDefinitions = new Map<
+    string,
+    () => Promise<(match: RouteMatch) => any>
+  >();
   const headDefinitions = new Map<string, any>();
   const headManager = new HeadManager();
   let isInitialized = false;
@@ -66,7 +76,7 @@ const RouterManager = (() => {
       attachGlobalListeners();
     }
   };
-  
+
   /**
    * Attaches the global click interceptor and performs the initial navigation.
    */
@@ -80,20 +90,30 @@ const RouterManager = (() => {
     });
 
     // Match the current URL to display the appropriate view
-    const currentMatch = routerInstance!.match(window.location.pathname + window.location.search);
+    const currentMatch = routerInstance!.match(
+      window.location.pathname + window.location.search,
+    );
     if (currentMatch) {
       routerInstance!.navigate(currentMatch.route, currentMatch.params);
     }
-    
+
     // Intercept all <a> clicks for SPA navigation.
-    document.documentElement.addEventListener('click', (event) => {
-      const link = (event.target as HTMLElement).closest('a');
+    document.documentElement.addEventListener("click", (event) => {
+      const link = (event.target as HTMLElement).closest("a");
       // Ignore modified clicks, external links, download links, or no-intercept attribute.
-      if (!link || link.origin !== window.location.origin || link.hasAttribute('download') || link.hasAttribute('no-intercept') || event.metaKey || event.ctrlKey || event.shiftKey) {
+      if (
+        !link ||
+        link.origin !== window.location.origin ||
+        link.hasAttribute("download") ||
+        link.hasAttribute("no-intercept") ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey
+      ) {
         return;
       }
       event.preventDefault();
-      const href = link.getAttribute('href');
+      const href = link.getAttribute("href");
       if (routerInstance && href) {
         const match = routerInstance.match(href);
         if (match) {
@@ -110,32 +130,35 @@ const RouterManager = (() => {
    * @returns {CombiRoute} The configured route object.
    */
   const createRouteForViewArea = (viewArea: ViewArea): CombiRoute => {
-      const matchPattern = viewArea.getAttribute('match') || '';
-      const matchers = parseMatchAttribute(matchPattern);
-      
-      const template = document.querySelector(`template[is="view-template"][view-id="${viewArea.getAttribute('view-id')}"]`);
-      const loaderId = template?.getAttribute('loader-id');
-      const loaderFn = loaderId ? loaderDefinitions.get(loaderId) : undefined;
-      
-      const guardId = viewArea.getAttribute('guard-id');
-      const guardFnLoader = guardId ? guardDefinitions.get(guardId) : undefined;
+    const matchPattern = viewArea.getAttribute("match") || "";
+    const matchers = parseMatchAttribute(matchPattern);
 
-      const routeConfig: any = {};
-      if (loaderFn) {
-          routeConfig.loader = async (match: RouteMatch) => (await loaderFn())(match);
-      }
-      if (guardFnLoader) {
-          routeConfig.guard = async (match: RouteMatch) => {
-            try {
-              const canActivate = await guardFnLoader();
-              return await canActivate(match);
-            } catch(e) {
-              console.error(`Error executing guard '${guardId}':`, e);
-              return false; // Fail securely by blocking navigation.
-            }
-          };
-      }
-      return route(...matchers, routeConfig);
+    const template = document.querySelector(
+      `template[is="view-template"][view-id="${viewArea.getAttribute("view-id")}"]`,
+    );
+    const loaderId = template?.getAttribute("loader-id");
+    const loaderFn = loaderId ? loaderDefinitions.get(loaderId) : undefined;
+
+    const guardId = viewArea.getAttribute("guard-id");
+    const guardFnLoader = guardId ? guardDefinitions.get(guardId) : undefined;
+
+    const routeConfig: any = {};
+    if (loaderFn) {
+      routeConfig.loader = async (match: RouteMatch) =>
+        (await loaderFn())(match);
+    }
+    if (guardFnLoader) {
+      routeConfig.guard = async (match: RouteMatch) => {
+        try {
+          const canActivate = await guardFnLoader();
+          return await canActivate(match);
+        } catch (e) {
+          console.error(`Error executing guard '${guardId}':`, e);
+          return false; // Fail securely by blocking navigation.
+        }
+      };
+    }
+    return route(...matchers, routeConfig);
   };
 
   return {
@@ -155,10 +178,10 @@ const RouterManager = (() => {
       routeDefinitions.set(viewArea, newRoute);
       if (isInitialized) {
         rebuildRouter();
-      } else { 
+      } else {
         isInitialized = true;
         // Batch all initial registrations from the first DOM paint.
-        setTimeout(rebuildRouter, 0); 
+        setTimeout(rebuildRouter, 0);
       }
       return newRoute;
     },
@@ -169,7 +192,7 @@ const RouterManager = (() => {
      */
     unregisterViewArea: (viewArea: ViewArea): void => {
       routeDefinitions.delete(viewArea);
-      if(isInitialized) rebuildRouter();
+      if (isInitialized) rebuildRouter();
     },
 
     /**
@@ -181,7 +204,10 @@ const RouterManager = (() => {
       let module: any;
       guardDefinitions.set(guardId, async () => {
         if (!module) module = await import(src);
-        if (typeof module.canActivate !== 'function') throw new Error(`Guard module ${src} must export a 'canActivate' function.`);
+        if (typeof module.canActivate !== "function")
+          throw new Error(
+            `Guard module ${src} must export a 'canActivate' function.`,
+          );
         return module.canActivate;
       });
     },
@@ -195,7 +221,10 @@ const RouterManager = (() => {
       let module: any;
       loaderDefinitions.set(loaderId, async () => {
         if (!module) module = await import(src);
-        if (typeof module.load !== 'function') throw new Error(`Loader module ${src} must export a 'load' function.`);
+        if (typeof module.load !== "function")
+          throw new Error(
+            `Loader module ${src} must export a 'load' function.`,
+          );
         return module.load;
       });
     },
@@ -217,16 +246,16 @@ const RouterManager = (() => {
     registerHeadForViewId: (viewId: string, headData: any): void => {
       // Find all view-areas with this view-id and register head data
       const viewAreas = Array.from(routeDefinitions.keys()).filter(
-        viewArea => viewArea.getAttribute('view-id') === viewId
+        (viewArea) => viewArea.getAttribute("view-id") === viewId,
       );
-      
-      viewAreas.forEach(viewArea => {
+
+      viewAreas.forEach((viewArea) => {
         // Create a unique head-id for this automatic registration
         const autoHeadId = `auto-${viewId}-${Math.random().toString(36).substr(2, 9)}`;
         headDefinitions.set(autoHeadId, headData);
-        
+
         // Set the head-id on the view-area so it gets picked up in updateHead
-        viewArea.setAttribute('head-id', autoHeadId);
+        viewArea.setAttribute("head-id", autoHeadId);
       });
     },
 
@@ -236,15 +265,17 @@ const RouterManager = (() => {
      */
     updateHead: (matchTree: RouteMatch | null): void => {
       const activeHeadData: any[] = [];
-      
+
       // Collect head data from all active routes in the hierarchy
       for (let match = matchTree; match; match = match.child || null) {
-        const viewAreas = Array.from(routeDefinitions.entries()).filter(([_, route]) => route.id === match.route.id);
+        const viewAreas = Array.from(routeDefinitions.entries()).filter(
+          ([_, route]) => route.id === match.route.id,
+        );
         for (const [viewArea] of viewAreas) {
-          const headId = viewArea.getAttribute('head-id');
+          const headId = viewArea.getAttribute("head-id");
           if (headId && headDefinitions.has(headId)) {
             const headData = headDefinitions.get(headId);
-            if (typeof headData === 'function') {
+            if (typeof headData === "function") {
               activeHeadData.push(headData(match));
             } else {
               activeHeadData.push(headData);
@@ -255,22 +286,29 @@ const RouterManager = (() => {
 
       // Merge all head data and apply to DOM
       if (activeHeadData.length > 0) {
-        const resolvedHeadData = activeHeadData.map(data => 
-          typeof data === 'function' 
-            ? resolveHeadData(data, matchTree!) 
-            : resolveHeadData(data, matchTree!)
+        const resolvedHeadData = activeHeadData.map((data) =>
+          typeof data === "function"
+            ? resolveHeadData(data, matchTree!)
+            : resolveHeadData(data, matchTree!),
         );
         const mergedHead = mergeHeadData(...resolvedHeadData);
         headManager.apply(mergedHead);
       }
-    }
+    },
   };
 })();
 
 // --- Helper Functions ---
 
 /** A minimal Standard Schema for validating URL parameters as strings. */
-const StringSchema: StandardSchemaV1<unknown, string> = { '~standard': { version: 1, vendor: 'example', validate: v => ({ value: String(v) }), types: {input: '', output: ''} } };
+const StringSchema: StandardSchemaV1<unknown, string> = {
+  "~standard": {
+    version: 1,
+    vendor: "example",
+    validate: (v) => ({ value: String(v) }),
+    types: { input: "", output: "" },
+  },
+};
 
 /**
  * Parses a URL-like pattern string into an array of @doeixd/combi-router matchers.
@@ -278,10 +316,12 @@ const StringSchema: StandardSchemaV1<unknown, string> = { '~standard': { version
  * @returns {Array<Function>} An array of matcher functions.
  */
 function parseMatchAttribute(pattern: string): any[] {
-  if (pattern === '*') return [(path as any).wildcard('wildcard')];
-  const parts = pattern.split('/').filter(p => p.length > 0);
+  if (pattern === "*") return [(path as any).wildcard("wildcard")];
+  const parts = pattern.split("/").filter((p) => p.length > 0);
   // Do not add `end()` here, as it would prevent nested routing.
-  return parts.map(part => part.startsWith(':') ? param(part.substring(1), StringSchema) : path(part));
+  return parts.map((part) =>
+    part.startsWith(":") ? param(part.substring(1), StringSchema) : path(part),
+  );
 }
 
 // --- Web Components ---
@@ -294,8 +334,9 @@ function parseMatchAttribute(pattern: string): any[] {
  */
 class Guard extends HTMLElement {
   connectedCallback() {
-    this.style.display = 'none';
-    const id = this.getAttribute('guard-id'), src = this.getAttribute('src');
+    this.style.display = "none";
+    const id = this.getAttribute("guard-id"),
+      src = this.getAttribute("src");
     if (id && src) RouterManager.registerGuard(id, src);
   }
 }
@@ -308,8 +349,9 @@ class Guard extends HTMLElement {
  */
 class Loader extends HTMLElement {
   connectedCallback() {
-    this.style.display = 'none';
-    const id = this.getAttribute('loader-id'), src = this.getAttribute('src');
+    this.style.display = "none";
+    const id = this.getAttribute("loader-id"),
+      src = this.getAttribute("src");
     if (id && src) RouterManager.registerLoader(id, src);
   }
 }
@@ -326,7 +368,7 @@ class Loader extends HTMLElement {
  * @attr {'top'|'bottom'|'none'} [scroll] - Controls scroll behavior on update.
  */
 class ViewArea extends HTMLElement {
-  private viewId = '';
+  private viewId = "";
   private route: CombiRoute | null = null;
   private unsubscribe: (() => void) | null = null;
   private nodeCache = new Map<string, DocumentFragment>();
@@ -334,7 +376,9 @@ class ViewArea extends HTMLElement {
   private _srcCache = new Map<string, string>();
 
   connectedCallback() {
-    this.viewId = this.getAttribute('view-id') || `view-${Math.random().toString(36).substr(2, 9)}`;
+    this.viewId =
+      this.getAttribute("view-id") ||
+      `view-${Math.random().toString(36).substr(2, 9)}`;
     this.route = RouterManager.registerViewArea(this);
     setTimeout(() => {
       const router = RouterManager.getRouter();
@@ -347,7 +391,7 @@ class ViewArea extends HTMLElement {
     RouterManager.unregisterViewArea(this);
     this.nodeCache.clear(); // Clear cache on removal
   }
-  
+
   /**
    * Main router subscription handler. Determines if this view area should be active.
    * @param {RouteMatch | null} matchTree - The current route match tree from the router.
@@ -356,9 +400,12 @@ class ViewArea extends HTMLElement {
     if (!this.route) return;
     let myMatch: RouteMatch | null = null;
     for (let m = matchTree; m; m = m.child || null) {
-      if (m.route.id === this.route.id) { myMatch = m; break; }
+      if (m.route.id === this.route.id) {
+        myMatch = m;
+        break;
+      }
     }
-    
+
     if (myMatch && !this.activeNode) {
       this.render(myMatch);
     } else if (!myMatch && this.activeNode) {
@@ -371,101 +418,120 @@ class ViewArea extends HTMLElement {
    * @param {RouteMatch} match - The route match data for this view.
    */
   private async render(match: RouteMatch) {
-    const template = document.querySelector(`template[is="view-template"][view-id="${this.viewId}"]`);
+    const template = document.querySelector(
+      `template[is="view-template"][view-id="${this.viewId}"]`,
+    );
     if (!template) return;
 
     // Emit loading start event for suspense components
-    this.dispatchEvent(new CustomEvent('route-loading-start', { bubbles: true }));
+    this.dispatchEvent(
+      new CustomEvent("route-loading-start", { bubbles: true }),
+    );
 
-    const useTransition = this.hasAttribute('transition') && 'startViewTransition' in document;
-    
+    const useTransition =
+      this.hasAttribute("transition") && "startViewTransition" in document;
+
     const updateDOM = async () => {
       try {
-        const mode = template.getAttribute('mode') || 'replace';
-        if (mode === 'replace') this.clearAllViews();
+        const mode = template.getAttribute("mode") || "replace";
+        if (mode === "replace") this.clearAllViews();
 
-        const cacheKey = template.getAttribute('src') || `inline_${template.innerHTML}`;
-        
-        if (this.hasAttribute('cache-nodes') && this.nodeCache.has(cacheKey)) {
+        const cacheKey =
+          template.getAttribute("src") || `inline_${template.innerHTML}`;
+
+        if (this.hasAttribute("cache-nodes") && this.nodeCache.has(cacheKey)) {
           const cachedFragment = this.nodeCache.get(cacheKey);
           if (cachedFragment) {
             this.appendChild(cachedFragment);
             this.activeNode = this.lastChild;
           }
         } else {
-          const src = template.getAttribute('src');
-          this.activeNode = src 
-              ? await this._streamViewFromSrc(src)
-              : this._renderInlineView(template);
+          const src = template.getAttribute("src");
+          this.activeNode = src
+            ? await this._streamViewFromSrc(src)
+            : this._renderInlineView(template);
         }
-        
+
         // Pass route data (including loaded data) to the new view.
         if (this.activeNode) {
-          this.activeNode.dispatchEvent(new CustomEvent('match-changed', { detail: { match }, bubbles: true, composed: true }));
+          this.activeNode.dispatchEvent(
+            new CustomEvent("match-changed", {
+              detail: { match },
+              bubbles: true,
+              composed: true,
+            }),
+          );
         }
         this._performScroll(this.activeNode);
 
         // Emit loading end event
-        this.dispatchEvent(new CustomEvent('route-loading-end', { bubbles: true }));
+        this.dispatchEvent(
+          new CustomEvent("route-loading-end", { bubbles: true }),
+        );
       } catch (error) {
         // Emit error event for error boundary to catch
-        this.dispatchEvent(new CustomEvent('route-error', { detail: { error }, bubbles: true }));
-        console.error('Error rendering view:', error);
+        this.dispatchEvent(
+          new CustomEvent("route-error", { detail: { error }, bubbles: true }),
+        );
+        console.error("Error rendering view:", error);
       }
     };
 
     if (useTransition) {
-        (document as any).startViewTransition(updateDOM);
+      (document as any).startViewTransition(updateDOM);
     } else {
-        updateDOM();
+      updateDOM();
     }
   }
-  
+
   /**
    * Clears the currently active view, caching its nodes if required.
    */
   private clear() {
     if (!this.activeNode) return;
-    const template = document.querySelector(`template[is="view-template"][view-id="${this.viewId}"]`);
+    const template = document.querySelector(
+      `template[is="view-template"][view-id="${this.viewId}"]`,
+    );
     if (!template) return;
 
-    if (this.hasAttribute('cache-nodes')) {
-        const cacheKey = template.getAttribute('src') || `inline_${template.innerHTML}`;
-        const fragment = document.createDocumentFragment();
-        fragment.appendChild(this.activeNode);
-        this.nodeCache.set(cacheKey, fragment);
+    if (this.hasAttribute("cache-nodes")) {
+      const cacheKey =
+        template.getAttribute("src") || `inline_${template.innerHTML}`;
+      const fragment = document.createDocumentFragment();
+      fragment.appendChild(this.activeNode);
+      this.nodeCache.set(cacheKey, fragment);
     } else {
-        this.activeNode.parentElement?.removeChild(this.activeNode);
+      this.activeNode.parentElement?.removeChild(this.activeNode);
     }
     this.activeNode = null;
   }
 
   /** Clears all content, ignoring the node cache. Used in 'replace' mode. */
   private clearAllViews() {
-      this.innerHTML = '';
-      this.activeNode = null;
+    this.innerHTML = "";
+    this.activeNode = null;
   }
-  
+
   /** Renders an inline <template> into the DOM. */
   private _renderInlineView(template: any) {
     const content = template.content.cloneNode(true);
     this.appendChild(content);
     return this.lastChild;
   }
-  
+
   /** Fetches, streams, and renders remote HTML content. */
   private async _streamViewFromSrc(src: string) {
-    const streamWrapper = document.createElement('div');
+    const streamWrapper = document.createElement("div");
     this.appendChild(streamWrapper);
     if (this._srcCache.has(src)) {
-        streamWrapper.innerHTML = this._srcCache.get(src)!;
+      streamWrapper.innerHTML = this._srcCache.get(src)!;
     } else {
       try {
         const response = await fetch(src);
         if (!response.ok || !response.body) throw new Error(`Fetch failed`);
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        let fullContent = '';
+        let fullContent = "";
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -473,7 +539,9 @@ class ViewArea extends HTMLElement {
           streamWrapper.innerHTML = fullContent;
         }
         this._srcCache.set(src, fullContent);
-      } catch (e) { streamWrapper.innerHTML = `<p style="color: red;">Error loading view.</p>`; }
+      } catch (e) {
+        streamWrapper.innerHTML = `<p style="color: red;">Error loading view.</p>`;
+      }
     }
     return streamWrapper;
   }
@@ -481,33 +549,41 @@ class ViewArea extends HTMLElement {
   /** Scrolls the view area or a new element into view based on the `scroll` attribute. */
   private _performScroll(element: any) {
     if (!(element instanceof HTMLElement)) return;
-    const scrollMode = this.getAttribute('scroll');
-    const options: any = { behavior: 'smooth' };
+    const scrollMode = this.getAttribute("scroll");
+    const options: any = { behavior: "smooth" };
     switch (scrollMode) {
-      case 'top': options.block = 'start'; break;
-      case 'bottom': options.block = 'end'; break;
-      case 'none': return;
-      default: return;
+      case "top":
+        options.block = "start";
+        break;
+      case "bottom":
+        options.block = "end";
+        break;
+      case "none":
+        return;
+      default:
+        return;
     }
     element.scrollIntoView(options);
   }
 }
 
 /**
-* Defines the content for a view, linked to a <view-area> by `view-id`.
-* Can optionally specify a `loader-id` to associate with a data loader.
-* @element view-template
-* @attr {string} view-id - Links this template to a <view-area>.
-* @attr {string} [loader-id] - Links this template to a <loader-element>.
-* @attr {'replace'|'append'} [mode=replace] - The rendering mode.
-* @attr {string} [src] - URL to fetch/stream HTML content from.
-*/
+ * Defines the content for a view, linked to a <view-area> by `view-id`.
+ * Can optionally specify a `loader-id` to associate with a data loader.
+ * @element view-template
+ * @attr {string} view-id - Links this template to a <view-area>.
+ * @attr {string} [loader-id] - Links this template to a <loader-element>.
+ * @attr {'replace'|'append'} [mode=replace] - The rendering mode.
+ * @attr {string} [src] - URL to fetch/stream HTML content from.
+ */
 class ViewTemplate extends HTMLElement {
-connectedCallback() { this.style.display = 'none'; }
+  connectedCallback() {
+    this.style.display = "none";
+  }
 }
 
 /**
- * Defines document head management for a view. Can be linked manually via `head-id` 
+ * Defines document head management for a view. Can be linked manually via `head-id`
  * or automatically discovered when placed inside a `view-template`.
  * Supports dynamic head content based on route parameters and nested head composition.
  * @element view-head
@@ -528,14 +604,14 @@ connectedCallback() { this.style.display = 'none'; }
  * @attr {string} twitter-image - Twitter card image URL.
  * @attr {string} robots - Robots meta tag content.
  * @attr {string} [src] - URL to fetch head configuration from a JSON/JS module.
- * 
+ *
  * @example
  * <!-- Automatic discovery: place inside view-template -->
  * <template is="view-template" view-id="user-profile">
  *   <view-head title="User Profile" description="User details page"></view-head>
  *   <h1>User Profile</h1>
  * </template>
- * 
+ *
  * @example
  * <!-- Manual linking: use head-id -->
  * <view-area match="/users/:id" view-id="user-profile" head-id="user-head"></view-area>
@@ -543,14 +619,14 @@ connectedCallback() { this.style.display = 'none'; }
  */
 class ViewHead extends HTMLElement {
   connectedCallback() {
-    this.style.display = 'none';
-    
+    this.style.display = "none";
+
     // Check if this view-head has an explicit head-id (manual linking)
-    const headId = this.getAttribute('head-id');
-    
+    const headId = this.getAttribute("head-id");
+
     if (headId) {
       // Manual linking via head-id attribute
-      const src = this.getAttribute('src');
+      const src = this.getAttribute("src");
       if (src) {
         this.loadHeadFromSrc(headId, src);
       } else {
@@ -568,21 +644,27 @@ class ViewHead extends HTMLElement {
    */
   private autoRegisterWithParentTemplate() {
     // Find the closest parent view-template
-    const parentTemplate = this.closest('template[is="view-template"]') as HTMLTemplateElement;
-    
+    const parentTemplate = this.closest(
+      'template[is="view-template"]',
+    ) as HTMLTemplateElement;
+
     if (!parentTemplate) {
-      console.warn('view-head: No parent view-template found and no head-id specified. Head will not be registered.');
+      console.warn(
+        "view-head: No parent view-template found and no head-id specified. Head will not be registered.",
+      );
       return;
     }
 
-    const viewId = parentTemplate.getAttribute('view-id');
+    const viewId = parentTemplate.getAttribute("view-id");
     if (!viewId) {
-      console.warn('view-head: Parent view-template has no view-id. Head will not be registered.');
+      console.warn(
+        "view-head: Parent view-template has no view-id. Head will not be registered.",
+      );
       return;
     }
 
     // Get head data and register with all view-areas using this view-id
-    const src = this.getAttribute('src');
+    const src = this.getAttribute("src");
     if (src) {
       this.loadHeadFromSrcForViewId(viewId, src);
     } else {
@@ -630,63 +712,84 @@ class ViewHead extends HTMLElement {
     const headData: any = {};
 
     // Basic meta tags
-    if (attrs.getNamedItem('title')) {
-      headData.title = this.getAttribute('title');
+    if (attrs.getNamedItem("title")) {
+      headData.title = this.getAttribute("title");
     }
-    if (attrs.getNamedItem('title-template')) {
-      headData.titleTemplate = this.getAttribute('title-template');
+    if (attrs.getNamedItem("title-template")) {
+      headData.titleTemplate = this.getAttribute("title-template");
     }
 
     const meta: any[] = [];
     const link: any[] = [];
 
     // Standard meta tags
-    if (attrs.getNamedItem('description')) {
-      meta.push({ name: 'description', content: this.getAttribute('description') });
+    if (attrs.getNamedItem("description")) {
+      meta.push({
+        name: "description",
+        content: this.getAttribute("description"),
+      });
     }
-    if (attrs.getNamedItem('keywords')) {
-      meta.push({ name: 'keywords', content: this.getAttribute('keywords') });
+    if (attrs.getNamedItem("keywords")) {
+      meta.push({ name: "keywords", content: this.getAttribute("keywords") });
     }
-    if (attrs.getNamedItem('robots')) {
-      meta.push({ name: 'robots', content: this.getAttribute('robots') });
+    if (attrs.getNamedItem("robots")) {
+      meta.push({ name: "robots", content: this.getAttribute("robots") });
     }
 
     // Open Graph tags
-    if (attrs.getNamedItem('og-title')) {
-      meta.push({ property: 'og:title', content: this.getAttribute('og-title') });
+    if (attrs.getNamedItem("og-title")) {
+      meta.push({
+        property: "og:title",
+        content: this.getAttribute("og-title"),
+      });
     }
-    if (attrs.getNamedItem('og-description')) {
-      meta.push({ property: 'og:description', content: this.getAttribute('og-description') });
+    if (attrs.getNamedItem("og-description")) {
+      meta.push({
+        property: "og:description",
+        content: this.getAttribute("og-description"),
+      });
     }
-    if (attrs.getNamedItem('og-image')) {
-      meta.push({ property: 'og:image', content: this.getAttribute('og-image') });
+    if (attrs.getNamedItem("og-image")) {
+      meta.push({
+        property: "og:image",
+        content: this.getAttribute("og-image"),
+      });
     }
-    if (attrs.getNamedItem('og-url')) {
-      meta.push({ property: 'og:url', content: this.getAttribute('og-url') });
+    if (attrs.getNamedItem("og-url")) {
+      meta.push({ property: "og:url", content: this.getAttribute("og-url") });
     }
-    meta.push({ 
-      property: 'og:type', 
-      content: this.getAttribute('og-type') || 'website' 
+    meta.push({
+      property: "og:type",
+      content: this.getAttribute("og-type") || "website",
     });
 
     // Twitter Card tags
-    meta.push({ 
-      name: 'twitter:card', 
-      content: this.getAttribute('twitter-card') || 'summary_large_image' 
+    meta.push({
+      name: "twitter:card",
+      content: this.getAttribute("twitter-card") || "summary_large_image",
     });
-    if (attrs.getNamedItem('twitter-title')) {
-      meta.push({ name: 'twitter:title', content: this.getAttribute('twitter-title') });
+    if (attrs.getNamedItem("twitter-title")) {
+      meta.push({
+        name: "twitter:title",
+        content: this.getAttribute("twitter-title"),
+      });
     }
-    if (attrs.getNamedItem('twitter-description')) {
-      meta.push({ name: 'twitter:description', content: this.getAttribute('twitter-description') });
+    if (attrs.getNamedItem("twitter-description")) {
+      meta.push({
+        name: "twitter:description",
+        content: this.getAttribute("twitter-description"),
+      });
     }
-    if (attrs.getNamedItem('twitter-image')) {
-      meta.push({ name: 'twitter:image', content: this.getAttribute('twitter-image') });
+    if (attrs.getNamedItem("twitter-image")) {
+      meta.push({
+        name: "twitter:image",
+        content: this.getAttribute("twitter-image"),
+      });
     }
 
     // Canonical link
-    if (attrs.getNamedItem('canonical')) {
-      link.push({ rel: 'canonical', href: this.getAttribute('canonical') });
+    if (attrs.getNamedItem("canonical")) {
+      link.push({ rel: "canonical", href: this.getAttribute("canonical") });
     }
 
     if (meta.length > 0) headData.meta = meta;
@@ -703,7 +806,7 @@ class ViewHead extends HTMLElement {
  * @attr {string} view-id - Links this suspense to specific view-area(s).
  * @attr {number} [delay=0] - Minimum delay in milliseconds before showing loading state.
  * @attr {number} [timeout=30000] - Timeout in milliseconds before showing error state.
- * 
+ *
  * @example
  * <view-suspense view-id="user-profile" delay="200">
  *   <view-fallback>
@@ -712,7 +815,6 @@ class ViewHead extends HTMLElement {
  * </view-suspense>
  */
 class ViewSuspense extends HTMLElement {
-  private _isActive = false;
   private delayTimer: number | null = null;
   private timeoutTimer: number | null = null;
   private unsubscribeRoutes: (() => void)[] = [];
@@ -720,9 +822,9 @@ class ViewSuspense extends HTMLElement {
   private defaultContent: DocumentFragment | null = null;
 
   connectedCallback() {
-    const viewId = this.getAttribute('view-id');
+    const viewId = this.getAttribute("view-id");
     if (!viewId) {
-      console.warn('view-suspense: view-id attribute is required');
+      console.warn("view-suspense: view-id attribute is required");
       return;
     }
 
@@ -735,15 +837,15 @@ class ViewSuspense extends HTMLElement {
 
   disconnectedCallback() {
     this.cleanup();
-    this.unsubscribeRoutes.forEach(unsub => unsub());
+    this.unsubscribeRoutes.forEach((unsub) => unsub());
   }
 
   private storeDefaultContent() {
     this.defaultContent = document.createDocumentFragment();
     const children = Array.from(this.children);
-    
-    children.forEach(child => {
-      if (child.tagName.toLowerCase() !== 'view-fallback') {
+
+    children.forEach((child) => {
+      if (child.tagName.toLowerCase() !== "view-fallback") {
         this.defaultContent!.appendChild(child.cloneNode(true));
       }
     });
@@ -760,29 +862,31 @@ class ViewSuspense extends HTMLElement {
   }
 
   private updateViewAreaBindings(viewId: string) {
-    const viewAreas = document.querySelectorAll(`view-area[view-id="${viewId}"]`);
-    
-    viewAreas.forEach(viewArea => {
+    const viewAreas = document.querySelectorAll(
+      `view-area[view-id="${viewId}"]`,
+    );
+
+    viewAreas.forEach((viewArea) => {
       // Listen for loading states
       const handleLoadingStart = () => this.showSuspense();
       const handleLoadingEnd = () => this.hideSuspense();
       const handleError = () => this.showError();
 
-      viewArea.addEventListener('route-loading-start', handleLoadingStart);
-      viewArea.addEventListener('route-loading-end', handleLoadingEnd);
-      viewArea.addEventListener('route-error', handleError);
+      viewArea.addEventListener("route-loading-start", handleLoadingStart);
+      viewArea.addEventListener("route-loading-end", handleLoadingEnd);
+      viewArea.addEventListener("route-error", handleError);
 
       this.unsubscribeRoutes.push(() => {
-        viewArea.removeEventListener('route-loading-start', handleLoadingStart);
-        viewArea.removeEventListener('route-loading-end', handleLoadingEnd);
-        viewArea.removeEventListener('route-error', handleError);
+        viewArea.removeEventListener("route-loading-start", handleLoadingStart);
+        viewArea.removeEventListener("route-loading-end", handleLoadingEnd);
+        viewArea.removeEventListener("route-error", handleError);
       });
     });
   }
 
   private showSuspense() {
-    const delay = parseInt(this.getAttribute('delay') || '0');
-    const timeout = parseInt(this.getAttribute('timeout') || '30000');
+    const delay = parseInt(this.getAttribute("delay") || "0");
+    const timeout = parseInt(this.getAttribute("timeout") || "30000");
 
     this.cleanup();
 
@@ -810,12 +914,10 @@ class ViewSuspense extends HTMLElement {
     this.cleanup();
     this.setActive(false);
     // Dispatch error event for error boundary to catch
-    this.dispatchEvent(new CustomEvent('view-timeout', { bubbles: true }));
+    this.dispatchEvent(new CustomEvent("view-timeout", { bubbles: true }));
   }
 
   private setActive(active: boolean) {
-    this._isActive = active;
-    
     if (active) {
       // Show fallback content if available
       if (this.fallbackContent) {
@@ -835,18 +937,18 @@ class ViewSuspense extends HTMLElement {
 
   private hideDefaultContent() {
     const children = Array.from(this.children);
-    children.forEach(child => {
-      if (child.tagName.toLowerCase() !== 'view-fallback') {
-        (child as HTMLElement).style.display = 'none';
+    children.forEach((child) => {
+      if (child.tagName.toLowerCase() !== "view-fallback") {
+        (child as HTMLElement).style.display = "none";
       }
     });
   }
 
   private showDefaultContent() {
     const children = Array.from(this.children);
-    children.forEach(child => {
-      if (child.tagName.toLowerCase() !== 'view-fallback') {
-        (child as HTMLElement).style.display = '';
+    children.forEach((child) => {
+      if (child.tagName.toLowerCase() !== "view-fallback") {
+        (child as HTMLElement).style.display = "";
       }
     });
   }
@@ -874,17 +976,17 @@ class ViewSuspense extends HTMLElement {
  * @element view-fallback
  * @attr {string} [for] - Specific view-id to provide fallback for (route context only).
  * @attr {string} [match-pattern] - URL pattern that triggers this fallback (route context only, e.g., "*" for 404).
- * 
+ *
  * @example
  * <!-- Route fallback (404) -->
  * <view-fallback match-pattern="*">Page not found</view-fallback>
- * 
+ *
  * @example
  * <!-- Suspense fallback -->
  * <view-suspense view-id="user-profile">
  *   <view-fallback>Loading user profile...</view-fallback>
  * </view-suspense>
- * 
+ *
  * @example
  * <!-- Error fallback -->
  * <view-error-boundary>
@@ -893,7 +995,7 @@ class ViewSuspense extends HTMLElement {
  */
 class ViewFallback extends HTMLElement {
   private unsubscribe: (() => void) | null = null;
-  private context: 'route' | 'suspense' | 'error' | null = null;
+  private context: "route" | "suspense" | "error" | null = null;
   private parentSuspense: ViewSuspense | null = null;
   private parentErrorBoundary: ViewErrorBoundary | null = null;
 
@@ -908,32 +1010,34 @@ class ViewFallback extends HTMLElement {
 
   private detectContext() {
     // Check if nested inside view-suspense
-    this.parentSuspense = this.closest('view-suspense') as ViewSuspense;
+    this.parentSuspense = this.closest("view-suspense") as ViewSuspense;
     if (this.parentSuspense) {
-      this.context = 'suspense';
+      this.context = "suspense";
       return;
     }
 
     // Check if nested inside view-error-boundary
-    this.parentErrorBoundary = this.closest('view-error-boundary') as ViewErrorBoundary;
+    this.parentErrorBoundary = this.closest(
+      "view-error-boundary",
+    ) as ViewErrorBoundary;
     if (this.parentErrorBoundary) {
-      this.context = 'error';
+      this.context = "error";
       return;
     }
 
     // Default to route fallback
-    this.context = 'route';
+    this.context = "route";
   }
 
   private initializeForContext() {
     switch (this.context) {
-      case 'suspense':
+      case "suspense":
         this.initializeSuspenseFallback();
         break;
-      case 'error':
+      case "error":
         this.initializeErrorFallback();
         break;
-      case 'route':
+      case "route":
         this.initializeRouteFallback();
         break;
     }
@@ -941,8 +1045,8 @@ class ViewFallback extends HTMLElement {
 
   private initializeSuspenseFallback() {
     // Initially hidden, will be shown by parent suspense component
-    this.style.display = 'none';
-    
+    this.style.display = "none";
+
     // Register with parent suspense
     if (this.parentSuspense) {
       (this.parentSuspense as any)._setFallbackContent(this);
@@ -951,9 +1055,9 @@ class ViewFallback extends HTMLElement {
 
   private initializeErrorFallback() {
     // Initially hidden, will be shown by parent error boundary
-    this.style.display = 'none';
-    
-    // Register with parent error boundary  
+    this.style.display = "none";
+
+    // Register with parent error boundary
     if (this.parentErrorBoundary) {
       (this.parentErrorBoundary as any)._setFallbackContent(this);
     }
@@ -973,34 +1077,41 @@ class ViewFallback extends HTMLElement {
   }
 
   private handleRouteChange = (matchTree: RouteMatch | null) => {
-    if (this.context !== 'route') return;
+    if (this.context !== "route") return;
 
-    const forViewId = this.getAttribute('for');
-    const matchPattern = this.getAttribute('match-pattern');
+    const forViewId = this.getAttribute("for");
+    const matchPattern = this.getAttribute("match-pattern");
 
-    if (matchPattern === '*' && !matchTree) {
+    if (matchPattern === "*" && !matchTree) {
       // Global 404 fallback
-      this.style.display = 'block';
+      this.style.display = "block";
       return;
     }
 
     if (forViewId) {
       // Check if specific view-id failed to match
       const hasMatchingView = this.findViewIdInMatchTree(matchTree, forViewId);
-      this.style.display = hasMatchingView ? 'none' : 'block';
+      this.style.display = hasMatchingView ? "none" : "block";
     } else if (!matchTree) {
       // Global fallback when no routes match
-      this.style.display = 'block';
+      this.style.display = "block";
     } else {
-      this.style.display = 'none';
+      this.style.display = "none";
     }
   };
 
-  private findViewIdInMatchTree(matchTree: RouteMatch | null, viewId: string): boolean {
+  private findViewIdInMatchTree(
+    matchTree: RouteMatch | null,
+    viewId: string,
+  ): boolean {
     for (let match = matchTree; match; match = match.child || null) {
-      const viewAreas = document.querySelectorAll(`view-area[view-id="${viewId}"]`);
+      const viewAreas = document.querySelectorAll(
+        `view-area[view-id="${viewId}"]`,
+      );
       for (const _viewArea of viewAreas) {
-        const route = RouterManager.getRouter()?.routes.find(r => r.id === match.route.id);
+        const route = RouterManager.getRouter()?.routes.find(
+          (r) => r.id === match.route.id,
+        );
         if (route) return true;
       }
     }
@@ -1009,11 +1120,11 @@ class ViewFallback extends HTMLElement {
 
   // Public methods for parent components to control display
   show() {
-    this.style.display = 'block';
+    this.style.display = "block";
   }
 
   hide() {
-    this.style.display = 'none';
+    this.style.display = "none";
   }
 
   getContent() {
@@ -1028,7 +1139,7 @@ class ViewFallback extends HTMLElement {
  * @element view-error-boundary
  * @attr {string} [view-id] - Specific view-id to monitor for errors.
  * @attr {boolean} [reset-on-route-change=true] - Whether to reset error state on route changes.
- * 
+ *
  * @example
  * <!-- Basic error boundary -->
  * <view-error-boundary>
@@ -1040,7 +1151,7 @@ class ViewFallback extends HTMLElement {
  *     </div>
  *   </view-fallback>
  * </view-error-boundary>
- * 
+ *
  * @example
  * <!-- Error boundary for specific view -->
  * <view-error-boundary view-id="user-profile">
@@ -1063,12 +1174,12 @@ class ViewErrorBoundary extends HTMLElement {
     }
 
     // Listen for errors from child elements
-    this.addEventListener('error', this.handleError, true);
-    this.addEventListener('view-timeout', this.handleError, true);
-    this.addEventListener('route-error', this.handleError, true);
+    this.addEventListener("error", this.handleError, true);
+    this.addEventListener("view-timeout", this.handleError, true);
+    this.addEventListener("route-error", this.handleError, true);
 
     // Monitor route changes for reset
-    if (this.getAttribute('reset-on-route-change') !== 'false') {
+    if (this.getAttribute("reset-on-route-change") !== "false") {
       const router = RouterManager.getRouter();
       if (router) {
         this.unsubscribe = router.subscribe(this.handleRouteChange);
@@ -1084,8 +1195,8 @@ class ViewErrorBoundary extends HTMLElement {
   }
 
   private handleError = (event: Event) => {
-    const viewId = this.getAttribute('view-id');
-    
+    const viewId = this.getAttribute("view-id");
+
     // If view-id is specified, only handle errors from that view
     if (viewId) {
       const target = event.target as Element;
@@ -1106,14 +1217,14 @@ class ViewErrorBoundary extends HTMLElement {
     if (this.hasError) return;
 
     this.hasError = true;
-    this.innerHTML = '';
+    this.innerHTML = "";
 
     // Use custom fallback content if available, otherwise default error UI
     if (this.fallbackContent) {
       this.appendChild(this.fallbackContent.cloneNode(true) as Element);
     } else {
-      this.errorContent = document.createElement('div');
-      this.errorContent.className = 'view-error-boundary';
+      this.errorContent = document.createElement("div");
+      this.errorContent.className = "view-error-boundary";
       this.errorContent.innerHTML = `
         <div style="padding: 20px; border: 2px solid #ff6b6b; border-radius: 8px; background: #ffe0e0; color: #d63031;">
           <h3 style="margin: 0 0 10px 0; color: #d63031;">Something went wrong</h3>
@@ -1124,14 +1235,14 @@ class ViewErrorBoundary extends HTMLElement {
         </div>
       `;
 
-      const retryButton = this.errorContent.querySelector('button');
-      retryButton?.addEventListener('click', () => this.resetError());
+      const retryButton = this.errorContent.querySelector("button");
+      retryButton?.addEventListener("click", () => this.resetError());
 
       this.appendChild(this.errorContent);
     }
 
     // Log error details
-    console.error('ViewErrorBoundary caught error:', event);
+    console.error("ViewErrorBoundary caught error:", event);
   }
 
   private resetError() {
@@ -1140,7 +1251,7 @@ class ViewErrorBoundary extends HTMLElement {
   }
 
   private restoreContent() {
-    this.innerHTML = '';
+    this.innerHTML = "";
     if (this.originalContent) {
       this.appendChild(this.originalContent.cloneNode(true));
     }
@@ -1153,11 +1264,11 @@ class ViewErrorBoundary extends HTMLElement {
 }
 
 // --- Define Custom Elements ---
-customElements.define('view-guard', Guard);
-customElements.define('view-loader', Loader);
-customElements.define('view-area', ViewArea);
-customElements.define('view-template', ViewTemplate, { extends: 'template' });
-customElements.define('view-head', ViewHead);
-customElements.define('view-suspense', ViewSuspense);
-customElements.define('view-fallback', ViewFallback);
-customElements.define('view-error-boundary', ViewErrorBoundary);
+customElements.define("view-guard", Guard);
+customElements.define("view-loader", Loader);
+customElements.define("view-area", ViewArea);
+customElements.define("view-template", ViewTemplate, { extends: "template" });
+customElements.define("view-head", ViewHead);
+customElements.define("view-suspense", ViewSuspense);
+customElements.define("view-fallback", ViewFallback);
+customElements.define("view-error-boundary", ViewErrorBoundary);

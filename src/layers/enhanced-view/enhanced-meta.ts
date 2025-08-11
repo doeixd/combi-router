@@ -8,12 +8,12 @@
 // =================================================================
 
 import type { Route } from "../../core/route";
-import type { RouteMatcher } from "../../core/types";
+
 import { meta } from "../../core/meta";
 import type {
   EnhancedViewFactory,
   TemplateResult,
-  HTMLTemplateResult
+  HTMLTemplateResult,
 } from "./enhanced-view";
 
 /**
@@ -72,9 +72,34 @@ import type {
  * @returns A route enhancer function
  */
 export function enhancedView<TParams>(
-  viewFactory: EnhancedViewFactory<TParams>
+  viewFactory: EnhancedViewFactory<TParams>,
 ): (route: Route<TParams>) => Route<TParams> {
-  return meta<TParams>({ view: viewFactory });
+  // Wrap the enhanced view factory to be compatible with ViewFactory
+  const wrappedFactory = (context: any): string | Node => {
+    const result = viewFactory(context);
+
+    // Handle different return types
+    if (typeof result === "string" || result instanceof Node) {
+      return result;
+    }
+
+    // For Promise, TemplateResult, HTMLTemplateResult, we need to convert to string
+    // This is a simplified conversion - in practice, the view layer would handle these
+    if (result && typeof result === "object") {
+      // Check if it's a TemplateResult or HTMLTemplateResult
+      if ("render" in result && typeof result.render === "function") {
+        const rendered = result.render();
+        if (typeof rendered === "string" || rendered instanceof Node) {
+          return rendered;
+        }
+      }
+    }
+
+    // Fallback to string conversion
+    return String(result);
+  };
+
+  return meta<TParams>({ view: wrappedFactory as any });
 }
 
 /**
@@ -109,9 +134,9 @@ export function htmlTemplate(
   options?: {
     afterRender?: (element: HTMLElement) => void;
     beforeRender?: () => void;
-  }
+  },
 ): HTMLTemplateResult {
-  const template = document.createElement('template');
+  const template = document.createElement("template");
   template.innerHTML = html;
 
   return {
@@ -124,14 +149,14 @@ export function htmlTemplate(
 
       // If afterRender is provided, wrap in a div to get the element
       if (options?.afterRender) {
-        const wrapper = document.createElement('div');
+        const wrapper = document.createElement("div");
         wrapper.appendChild(clone);
         options.afterRender(wrapper);
         return wrapper;
       }
 
       return clone;
-    }
+    },
   };
 }
 
@@ -152,7 +177,7 @@ export function htmlTemplate(
  */
 export function lazyView<TParams>(
   loader: () => Promise<EnhancedViewFactory<TParams>>,
-  loadingView?: EnhancedViewFactory<TParams>
+  loadingView?: EnhancedViewFactory<TParams>,
 ): (route: Route<TParams>) => Route<TParams> {
   let cachedFactory: EnhancedViewFactory<TParams> | null = null;
 
@@ -166,7 +191,7 @@ export function lazyView<TParams>(
         const result = loadingView(context);
 
         // Start loading the actual view
-        loader().then(factory => {
+        loader().then((factory) => {
           cachedFactory = factory;
           // Trigger re-render - this would need router access
           // In practice, this would be handled by the view layer
@@ -201,7 +226,7 @@ export function lazyView<TParams>(
 export function conditionalView<TParams>(
   condition: (context: { match: any }) => boolean,
   trueView: EnhancedViewFactory<TParams>,
-  falseView: EnhancedViewFactory<TParams>
+  falseView: EnhancedViewFactory<TParams>,
 ): (route: Route<TParams>) => Route<TParams> {
   return enhancedView<TParams>((context) => {
     if (condition(context)) {
@@ -228,14 +253,18 @@ export function conditionalView<TParams>(
  */
 export function errorBoundaryView<TParams>(
   viewFactory: EnhancedViewFactory<TParams>,
-  errorView: (error: Error) => string | Node | TemplateResult | HTMLTemplateResult
+  errorView: (
+    error: Error,
+  ) => string | Node | TemplateResult | HTMLTemplateResult,
 ): (route: Route<TParams>) => Route<TParams> {
   return enhancedView<TParams>(async (context) => {
     try {
       return await viewFactory(context);
     } catch (error) {
-      console.error('[ErrorBoundaryView] View rendering failed:', error);
-      return errorView(error instanceof Error ? error : new Error(String(error)));
+      console.error("[ErrorBoundaryView] View rendering failed:", error);
+      return errorView(
+        error instanceof Error ? error : new Error(String(error)),
+      );
     }
   });
 }
@@ -266,7 +295,11 @@ export function errorBoundaryView<TParams>(
  */
 export function composeViews<TParams, TParts extends Record<string, any>>(
   parts: { [K in keyof TParts]: EnhancedViewFactory<TParams> },
-  composer: (parts: { [K in keyof TParts]: any }) => string | Node | TemplateResult | HTMLTemplateResult
+  composer: (parts: { [K in keyof TParts]: any }) =>
+    | string
+    | Node
+    | TemplateResult
+    | HTMLTemplateResult,
 ): (route: Route<TParams>) => Route<TParams> {
   return enhancedView<TParams>(async (context) => {
     const renderedParts: Partial<TParts> = {};
@@ -274,8 +307,10 @@ export function composeViews<TParams, TParts extends Record<string, any>>(
     // Render all parts in parallel
     await Promise.all(
       Object.entries(parts).map(async ([key, factory]) => {
-        renderedParts[key as keyof TParts] = await (factory as EnhancedViewFactory<TParams>)(context);
-      })
+        renderedParts[key as keyof TParts] = await (
+          factory as EnhancedViewFactory<TParams>
+        )(context);
+      }),
     );
 
     return composer(renderedParts as TParts);
@@ -306,14 +341,16 @@ export function composeViews<TParams, TParts extends Record<string, any>>(
  * ```
  */
 export function streamingView<TParams>(
-  generator: (context: { match: any }) => AsyncGenerator<string | Node | TemplateResult | HTMLTemplateResult>
+  generator: (context: {
+    match: any;
+  }) => AsyncGenerator<string | Node | TemplateResult | HTMLTemplateResult>,
 ): (route: Route<TParams>) => Route<TParams> {
   return enhancedView<TParams>(async (context) => {
     // For streaming, we return a special object that the view layer can recognize
     return {
       _streaming: true,
       generator: generator(context),
-      render: async function() {
+      render: async function () {
         // Collect all chunks for non-streaming renderers
         const chunks: any[] = [];
         for await (const chunk of generator(context)) {
@@ -321,7 +358,7 @@ export function streamingView<TParams>(
         }
         // Return the last chunk as the final result
         return chunks[chunks.length - 1];
-      }
+      },
     } as any;
   });
 }
@@ -345,7 +382,7 @@ export function streamingView<TParams>(
 export function cachedView<TParams>(
   viewFactory: EnhancedViewFactory<TParams>,
   keyFn: (context: { match: any }) => string,
-  ttl: number = 60000
+  ttl: number = 60000,
 ): (route: Route<TParams>) => Route<TParams> {
   const cache = new Map<string, { result: any; timestamp: number }>();
 

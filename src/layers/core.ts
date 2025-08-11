@@ -85,24 +85,12 @@
  * ```
  */
 
-import type {
-  Route,
-  RouteMatch,
-  NavigationController,
-  NavigationContext,
-  ErrorContext,
-} from "../core/types";
-import type {
-  RouterLayer,
-  RouterContext,
-  ComposableRouter,
-  NavigationOptions,
-} from "../core/layer-types";
-import type {
-  ErrorStrategy,
-  ErrorStrategyConfig,
+import type { Route, RouteMatch, NavigationContext } from "../core/types";
+import type { NavigationOptions } from "../core/layer-types";
+import {
+  createErrorStrategy,
+  type ErrorStrategyConfig,
 } from "./strategies/error-strategy";
-import { createErrorStrategy } from "./strategies/error-strategy";
 
 /**
  * Configuration options for the core navigation layer.
@@ -115,7 +103,7 @@ export interface CoreNavigationLayerConfig {
    * - 'selective': Custom control over which errors throw
    * - Custom ErrorStrategy object for full control
    */
-  errorStrategy?: ErrorStrategyConfig;
+  errorStrategy?: ErrorStrategyConfig | "throw" | "graceful" | "selective";
 
   /**
    * Options for selective error strategy (when errorStrategy is 'selective').
@@ -158,10 +146,10 @@ export function createCoreNavigationLayer(
   config: CoreNavigationLayerConfig = {},
 ) {
   // Initialize error strategy
-  const strategy = createErrorStrategy(
-    config.errorStrategy || "throw",
-    config.selectiveStrategyOptions,
-  );
+  const strategy =
+    config.errorStrategy === "selective"
+      ? createErrorStrategy("selective", config.selectiveStrategyOptions)
+      : createErrorStrategy(config.errorStrategy || "throw");
 
   // Private state for this layer
   let navigationId = 0;
@@ -618,9 +606,10 @@ export function createCoreNavigationLayer(
 
   // Route pattern matching helper - DEPRECATED, using Route.parser instead
   // This function is kept for backward compatibility but is no longer used
-  function matchRoutePattern(
-    route: any,
-    pathname: string,
+  // @ts-ignore - Intentionally unused deprecated function
+  function _deprecatedMatchRoutePattern(
+    _route: any,
+    _pathname: string,
   ): { params: Record<string, string> } | null {
     // This function is now unused - matching is done via Route.parser in matchRoute()
     return null;

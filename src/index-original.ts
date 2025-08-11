@@ -12,15 +12,15 @@
 // =================================================================
 
 // =================================================================
-     ----------------------- CORE EXPORTS ---------------------------
-     =================================================================
-    
-     Core types and interfaces
-    port type {
-    Resource,
-    ResourceStatus,
-    InferParams,
-    RouteMatch,
+// ----------------------- CORE EXPORTS ---------------------------
+// =================================================================
+
+// Core types and interfaces
+export type {
+  Resource,
+  ResourceStatus,
+  InferParams,
+  RouteMatch,
   RouteMatcher,
   RouteMetadata,
   LoaderContext,
@@ -37,57 +37,56 @@
   StandardSchemaV1,
   StandardSchemaV1Namespace,
   Parser,
-  Success
-} from './core/types';
-    
-     Error classes and enums
-     ort { RouteValidationError, NavigationErrorType } from './core/types';
-     
-     Route class and building functions
-     ort { Route, route, extend, pipe } from './core/route';
-    
-     Route matchers
-    port { path, param, query, end } from './core/matchers';
+  Success,
+} from "./core/types";
+
+// Error classes and enums
+export { RouteValidationError, NavigationErrorType } from "./core/types";
+
+// Route class and building functions
+export { Route, route, extend, pipe } from "./core/route";
+
+// Route matchers
+export { path, param, query, end } from "./core/matchers";
 
 // Router class and factory
-export { CombiRouter, createRouter } from './core/router';
- 
+export { CombiRouter, createRouter } from "./core/router";
+
 // Guards
-export { guard, typedGuard } from './core/guards';
- 
- / Meta enhancers
- xport { meta, loader, layout, lazy } from './core/meta';
- 
- / =================================================================
- / ----------------------- DATA EXPORTS ---------------------------
- / =================================================================
- 
- / Resource/Suspense system
- xport { createResource, SuspensePromise } from './data/resource';
- 
- / Cache utilities
- xport { cache } from './data/cache';
- 
- / =================================================================
- / ----------------------- DEV EXPORTS ----------------------------
- / =================================================================
- 
- / Development validation (only in dev builds)
- xport { validateRoute, validateRoutes } from './dev/validation';
- 
+export { guard, typedGuard } from "./core/guards";
+
+// Meta enhancers
+export { meta, loader, layout, lazy } from "./core/meta";
+
+// =================================================================
+// ----------------------- DATA EXPORTS ---------------------------
+// =================================================================
+
+// Resource/Suspense system
+export { createResource, SuspensePromise } from "./data/resource";
+
+// Cache utilities
+export { cache } from "./data/cache";
+
+// =================================================================
+// ----------------------- DEV EXPORTS ----------------------------
+// =================================================================
+
+// Development validation (only in dev builds)
+export { validateRoute, validateRoutes } from "./dev/validation";
+
 // Debugging utilities (only in dev builds)
-    port { 
-    inspectRoute, 
-    inspectMatch, 
-        sualizeRouteTree, 
-        bugRouter, 
-    monitorNavigation 
-} from './dev/debugging';
-    
-        ================================================================
-        ---------------------- UTILITY EXPORTS ------------------------
-            ==============================================================
-                
-                work-agnostic integration helpers
-                 from './utils';
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+export {
+  inspectRoute,
+  inspectMatch,
+  visualizeRouteTree,
+  debugRouter,
+  monitorNavigation,
+} from "./dev/debugging";
+
+// =================================================================
+// ---------------------- UTILITY EXPORTS ------------------------
+// =================================================================
+
+// Framework-agnostic integration helpers
+export * from "./utils";

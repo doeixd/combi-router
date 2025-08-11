@@ -247,11 +247,13 @@ export class RouterDebugger {
   // =================================================================
 
   private getRoutes(): any[] {
-    // Handle both CombiRouter (routes as array) and layered router (routes as function)
+    // Handle both CombiRouter (routes as array) and layered router (routes as getter)
     if (typeof this.router.routes === "function") {
-      return this.router.routes();
+      // For layered routers, routes are not directly accessible
+      // Return empty array to avoid errors - layered routers handle their own validation
+      return [];
     }
-    return this.router.routes || [];
+    return [...(this.router.routes || [])];
   }
 
   public analyzeRoutes(): RouteAnalysis[] {
@@ -259,7 +261,6 @@ export class RouterDebugger {
   }
 
   public analyzeRoute(route: Route<any>): RouteAnalysis {
-    const staticSegments = this.extractStaticSegments(route);
     const dynamicSegments = route.paramNames;
 
     return {
@@ -272,20 +273,6 @@ export class RouterDebugger {
       potentialIssues: this.identifyIssues(route),
       optimizations: this.suggestRouteOptimizations(route),
     };
-  }
-
-  private extractStaticSegments(route: Route<any>): string[] {
-    const segments: string[] = [];
-
-    route.routeChain.forEach((r) => {
-      r.matchers.forEach((matcher: any) => {
-        if (matcher.type === "path") {
-          segments.push(matcher.segment);
-        }
-      });
-    });
-
-    return segments;
   }
 
   private calculateComplexity(route: Route<any>): number {
@@ -482,7 +469,7 @@ export class RouterDebugger {
         });
         flow.sources.push(current.route.id);
       }
-      current = current.child;
+      current = current.child ?? null;
     }
 
     return flow;
@@ -495,7 +482,7 @@ export class RouterDebugger {
     };
   }
 
-  private analyzeGuardResults(match: RouteMatch<any>): any[] {
+  private analyzeGuardResults(_match: RouteMatch<any>): any[] {
     // Would need router integration to get actual guard execution results
     return [];
   }
@@ -584,7 +571,7 @@ export class RouterDebugger {
   private getRoutePattern(route: Route<any>): string {
     const parts: string[] = [];
 
-    route.routeChain.forEach((r) => {
+    route.routeChain.forEach((r: any) => {
       r.matchers.forEach((matcher: any) => {
         switch (matcher.type) {
           case "path":

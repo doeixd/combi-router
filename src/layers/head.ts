@@ -8,17 +8,17 @@
 
 /**
  * # Head Management Layer
- * 
+ *
  * Provides dynamic head tag management for SEO, meta tags, and document
  * head manipulation with support for route-specific configurations.
- * 
+ *
  * This layer enhances the router with automatic head tag updates during
  * navigation, supporting titles, meta tags, Open Graph, and custom elements.
- * 
+ *
  * @example Basic Usage
  * ```typescript
  * import { createLayeredRouter, createCoreNavigationLayer, withHeadManagement } from '@doeixd/combi-router';
- * 
+ *
  * const router = createLayeredRouter(routes)
  *   (createCoreNavigationLayer())
  *   (withHeadManagement({
@@ -27,7 +27,7 @@
  *     enableOpenGraph: true
  *   }))
  *   ();
- * 
+ *
  * // Head management happens automatically during navigation
  * router.setHeadData({
  *   title: 'About Us',
@@ -36,14 +36,14 @@
  *   ]
  * });
  * ```
- * 
+ *
  * @example Route-Specific Head Data
  * ```typescript
  * const router = createLayeredRouter(routes)
  *   (createCoreNavigationLayer())
  *   (withHeadManagement())
  *   ();
- * 
+ *
  * // Set head data for specific routes
  * router.setRouteHeadData('user', (params) => ({
  *   title: `User Profile - ${params.name}`,
@@ -53,31 +53,31 @@
  *   ]
  * }));
  * ```
- * 
+ *
  * ## Features Provided
- * 
+ *
  * ### Title Management
  * - Dynamic title updates
  * - Title templates with placeholders
  * - Fallback titles for routes
- * 
+ *
  * ### Meta Tags
  * - Dynamic meta tag creation/update
  * - SEO-optimized meta descriptions
  * - Open Graph and Twitter Card support
- * 
+ *
  * ### Link Tags
  * - Canonical URLs
  * - Alternate language links
  * - Preload/prefetch resources
- * 
+ *
  * ### Script and Style Tags
  * - Route-specific scripts
  * - Inline styles
  * - External resource loading
- * 
+ *
  * ## Configuration Options
- * 
+ *
  * ```typescript
  * interface HeadManagementLayerConfig {
  *   titleTemplate?: string;           // Template for titles (e.g., '%s | My App')
@@ -91,51 +91,61 @@
  * ```
  */
 
-import type { RouteMatch } from '../core/types';
-import type { RouterLayer, HeadManagementLayerConfig } from '../core/layer-types';
-import { HeadManager, type HeadInput, resolveHeadData } from '../features/head';
+import type { RouteMatch } from "../core/types";
+import type {
+  RouterLayer,
+  HeadManagementLayerConfig,
+} from "../core/layer-types";
+import { HeadManager, type HeadInput, resolveHeadData } from "../features/head";
 
 /**
  * Validates head management layer configuration
  */
-function validateHeadConfig(config: HeadManagementLayerConfig): HeadManagementLayerConfig {
+function validateHeadConfig(
+  config: HeadManagementLayerConfig,
+): HeadManagementLayerConfig {
   const validated = { ...config };
-  
+
   // Validate title template
-  if (config.titleTemplate !== undefined && typeof config.titleTemplate !== 'string') {
-    console.warn('[HeadLayer] Invalid titleTemplate, using default');
-    validated.titleTemplate = '%s';
+  if (
+    config.titleTemplate !== undefined &&
+    typeof config.titleTemplate !== "string"
+  ) {
+    console.warn("[HeadLayer] Invalid titleTemplate, using default");
+    validated.titleTemplate = "%s";
   }
-  
+
   // Validate base URL
   if (config.baseUrl !== undefined) {
     try {
       new URL(config.baseUrl);
     } catch {
-      console.warn('[HeadLayer] Invalid baseUrl, disabling canonical URLs');
+      console.warn("[HeadLayer] Invalid baseUrl, disabling canonical URLs");
       validated.enableCanonical = false;
     }
   }
-  
+
   return validated;
 }
 
 /**
  * Checks if the router instance supports lifecycle hooks
  */
-function hasLifecycleSupport(self: any): self is { _registerLifecycleHook: (name: string, fn: Function) => void } {
-  return typeof self._registerLifecycleHook === 'function';
+function hasLifecycleSupport(
+  self: any,
+): self is { _registerLifecycleHook: (name: string, fn: Function) => void } {
+  return typeof self._registerLifecycleHook === "function";
 }
 
 /**
  * Creates a head management layer for dynamic document head manipulation.
- * 
+ *
  * This layer provides comprehensive head tag management with automatic
  * updates during navigation and support for SEO optimization.
- * 
+ *
  * @param config Configuration options for head management behavior
  * @returns A router layer that adds head management capabilities
- * 
+ *
  * @example Basic Head Management
  * ```typescript
  * const router = createLayeredRouter(routes)
@@ -145,10 +155,10 @@ function hasLifecycleSupport(self: any): self is { _registerLifecycleHook: (name
  *     enableOpenGraph: true
  *   }))
  *   ();
- * 
+ *
  * // Automatic head updates during navigation
  * ```
- * 
+ *
  * @example SEO-Optimized Setup
  * ```typescript
  * const router = createLayeredRouter(routes)
@@ -164,17 +174,23 @@ function hasLifecycleSupport(self: any): self is { _registerLifecycleHook: (name
  *   ();
  * ```
  */
-export function createHeadManagementLayer(config: HeadManagementLayerConfig = {}): RouterLayer<any, HeadManagementLayerExtensions> {
+export function createHeadManagementLayer(
+  config: HeadManagementLayerConfig = {},
+): RouterLayer<any, HeadManagementLayerExtensions> {
   return (self) => {
     // Validate and sanitize configuration
     const validatedConfig = validateHeadConfig(config);
-    
+
     // Create head manager instance
-    const headManager = typeof document !== 'undefined' ? new HeadManager(document) : null;
-    
+    const headManager =
+      typeof document !== "undefined" ? new HeadManager(document) : null;
+
     // Store route-specific head data
-    const routeHeadData = new Map<string, HeadInput | ((params: any) => HeadInput)>();
-    
+    const routeHeadData = new Map<
+      string,
+      HeadInput | ((params: any) => HeadInput)
+    >();
+
     // Current head state
     let currentHeadData: HeadInput | null = null;
 
@@ -185,35 +201,46 @@ export function createHeadManagementLayer(config: HeadManagementLayerConfig = {}
     if (hasLifecycleSupport(self)) {
       try {
         // Navigation complete - update head tags
-        self._registerLifecycleHook('onNavigationComplete', (match: RouteMatch<any>) => {
-          try {
-            updateHeadForRoute(match);
-          } catch (error) {
-            console.error('[HeadLayer] Error in onNavigationComplete:', error);
-          }
-        });
+        self._registerLifecycleHook(
+          "onNavigationComplete",
+          (match: RouteMatch<any>) => {
+            try {
+              updateHeadForRoute(match);
+            } catch (error) {
+              console.error(
+                "[HeadLayer] Error in onNavigationComplete:",
+                error,
+              );
+            }
+          },
+        );
 
         // Cleanup on destroy
-        self._registerLifecycleHook('onDestroy', () => {
+        self._registerLifecycleHook("onDestroy", () => {
           try {
-            cleanupFunctions.forEach(cleanup => cleanup());
-            headManager?.destroy?.();
-            console.log('[HeadLayer] Cleanup completed');
+            cleanupFunctions.forEach((cleanup) => cleanup());
+            // HeadManager cleanup - clear managed elements
+            if (headManager && "managedElements" in headManager) {
+              (headManager as any).managedElements?.clear();
+            }
+            console.log("[HeadLayer] Cleanup completed");
           } catch (error) {
-            console.error('[HeadLayer] Error during cleanup:', error);
+            console.error("[HeadLayer] Error during cleanup:", error);
           }
         });
       } catch (error) {
-        console.error('[HeadLayer] Failed to register lifecycle hooks:', error);
+        console.error("[HeadLayer] Failed to register lifecycle hooks:", error);
       }
     } else {
-      console.warn('[HeadLayer] Lifecycle hooks not supported by router instance');
+      console.warn(
+        "[HeadLayer] Lifecycle hooks not supported by router instance",
+      );
     }
 
     // Update head tags for a specific route
     const updateHeadForRoute = (match: RouteMatch<any>): void => {
       if (!headManager) {
-        console.warn('[HeadLayer] Head manager not available (likely SSR)');
+        console.warn("[HeadLayer] Head manager not available (likely SSR)");
         return;
       }
 
@@ -223,7 +250,10 @@ export function createHeadManagementLayer(config: HeadManagementLayerConfig = {}
         let headData: HeadInput = {};
 
         if (routeData) {
-          headData = typeof routeData === 'function' ? routeData(match.params) : routeData;
+          headData =
+            typeof routeData === "function"
+              ? routeData(match.params)
+              : routeData;
         }
 
         // Apply global configuration
@@ -231,51 +261,105 @@ export function createHeadManagementLayer(config: HeadManagementLayerConfig = {}
           headData.title = validatedConfig.defaultTitle;
         }
 
+        // Normalize title to string
+        let titleStr: string | undefined;
+        if (typeof headData.title === "string") {
+          titleStr = headData.title;
+        } else if (typeof headData.title === "function") {
+          const result = headData.title(match.params);
+          titleStr =
+            typeof result === "string" ? result : (result as any)?.title;
+        } else if (headData.title && typeof headData.title === "object") {
+          titleStr = (headData.title as any).title;
+        }
+
         // Apply title template
-        if (headData.title && validatedConfig.titleTemplate) {
-          headData.title = validatedConfig.titleTemplate.replace('%s', headData.title);
+        if (titleStr && validatedConfig.titleTemplate) {
+          titleStr = validatedConfig.titleTemplate.replace("%s", titleStr);
+          headData.title = titleStr;
+        }
+
+        // Normalize meta to array
+        let metaArray: any[] = [];
+        if (Array.isArray(headData.meta)) {
+          metaArray = headData.meta;
+        } else if (typeof headData.meta === "function") {
+          metaArray = headData.meta(match.params);
         }
 
         // Auto-generate Open Graph tags
-        if (validatedConfig.enableOpenGraph && headData.title) {
-          headData.meta = headData.meta || [];
-          if (!headData.meta.find(m => m.property === 'og:title')) {
-            headData.meta.push({ property: 'og:title', content: headData.title });
+        if (validatedConfig.enableOpenGraph && titleStr) {
+          if (!metaArray.find((m: any) => m.property === "og:title")) {
+            metaArray.push({
+              property: "og:title",
+              content: titleStr,
+            });
           }
-          if (!headData.meta.find(m => m.property === 'og:url') && validatedConfig.baseUrl) {
-            const url = new URL(match.path, validatedConfig.baseUrl).toString();
-            headData.meta.push({ property: 'og:url', content: url });
+          if (
+            !metaArray.find((m: any) => m.property === "og:url") &&
+            validatedConfig.baseUrl
+          ) {
+            const url = new URL(
+              match.pathname,
+              validatedConfig.baseUrl,
+            ).toString();
+            metaArray.push({ property: "og:url", content: url });
           }
         }
 
         // Auto-generate Twitter Card tags
-        if (validatedConfig.enableTwitterCard && headData.title) {
-          headData.meta = headData.meta || [];
-          if (!headData.meta.find(m => m.name === 'twitter:title')) {
-            headData.meta.push({ name: 'twitter:title', content: headData.title });
+        if (validatedConfig.enableTwitterCard && titleStr) {
+          if (!metaArray.find((m: any) => m.name === "twitter:title")) {
+            metaArray.push({
+              name: "twitter:title",
+              content: titleStr,
+            });
           }
-          if (!headData.meta.find(m => m.name === 'twitter:card')) {
-            headData.meta.push({ name: 'twitter:card', content: 'summary' });
+          if (!metaArray.find((m: any) => m.name === "twitter:card")) {
+            metaArray.push({ name: "twitter:card", content: "summary" });
           }
+        }
+
+        // Update headData with normalized meta
+        if (metaArray.length > 0) {
+          headData.meta = metaArray;
+        }
+
+        // Normalize link to array
+        let linkArray: any[] = [];
+        if (Array.isArray(headData.link)) {
+          linkArray = headData.link;
+        } else if (typeof headData.link === "function") {
+          linkArray = headData.link(match.params);
         }
 
         // Auto-generate canonical URL
         if (validatedConfig.enableCanonical && validatedConfig.baseUrl) {
-          headData.link = headData.link || [];
-          if (!headData.link.find(l => l.rel === 'canonical')) {
-            const canonical = new URL(match.path, validatedConfig.baseUrl).toString();
-            headData.link.push({ rel: 'canonical', href: canonical });
+          if (!linkArray.find((l: any) => l.rel === "canonical")) {
+            const canonical = new URL(
+              match.pathname,
+              validatedConfig.baseUrl,
+            ).toString();
+            linkArray.push({ rel: "canonical", href: canonical });
           }
+        }
+
+        // Update headData with normalized link
+        if (linkArray.length > 0) {
+          headData.link = linkArray;
         }
 
         // Resolve and apply head data
         const resolvedHead = resolveHeadData(headData, match);
         headManager.apply(resolvedHead);
-        
+
         currentHeadData = headData;
         console.log(`[HeadLayer] Updated head for route: ${match.route.id}`);
       } catch (error) {
-        console.error(`[HeadLayer] Failed to update head for route ${match.route.id}:`, error);
+        console.error(
+          `[HeadLayer] Failed to update head for route ${match.route.id}:`,
+          error,
+        );
       }
     };
 
@@ -283,21 +367,29 @@ export function createHeadManagementLayer(config: HeadManagementLayerConfig = {}
     const setHeadData = (headData: HeadInput): void => {
       try {
         if (!headManager) {
-          console.warn('[HeadLayer] Head manager not available');
+          console.warn("[HeadLayer] Head manager not available");
+          return;
+        }
+
+        if (!self.currentMatch) {
+          console.warn("[HeadLayer] No current match available");
           return;
         }
 
         const resolvedHead = resolveHeadData(headData, self.currentMatch);
         headManager.apply(resolvedHead);
         currentHeadData = headData;
-        console.log('[HeadLayer] Head data updated');
+        console.log("[HeadLayer] Head data updated");
       } catch (error) {
-        console.error('[HeadLayer] Failed to set head data:', error);
+        console.error("[HeadLayer] Failed to set head data:", error);
       }
     };
 
     // Set head data for a specific route
-    const setRouteHeadData = (routeId: string, headData: HeadInput | ((params: any) => HeadInput)): void => {
+    const setRouteHeadData = (
+      routeId: string,
+      headData: HeadInput | ((params: any) => HeadInput),
+    ): void => {
       try {
         routeHeadData.set(routeId, headData);
         console.log(`[HeadLayer] Head data set for route: ${routeId}`);
@@ -307,7 +399,10 @@ export function createHeadManagementLayer(config: HeadManagementLayerConfig = {}
           updateHeadForRoute(self.currentMatch);
         }
       } catch (error) {
-        console.error(`[HeadLayer] Failed to set head data for route ${routeId}:`, error);
+        console.error(
+          `[HeadLayer] Failed to set head data for route ${routeId}:`,
+          error,
+        );
       }
     };
 
@@ -324,22 +419,27 @@ export function createHeadManagementLayer(config: HeadManagementLayerConfig = {}
           console.log(`[HeadLayer] Head data removed for route: ${routeId}`);
         }
       } catch (error) {
-        console.error(`[HeadLayer] Failed to remove head data for route ${routeId}:`, error);
+        console.error(
+          `[HeadLayer] Failed to remove head data for route ${routeId}:`,
+          error,
+        );
       }
     };
 
     // Update configuration
-    const updateHeadConfig = (newConfig: Partial<HeadManagementLayerConfig>): void => {
+    const updateHeadConfig = (
+      newConfig: Partial<HeadManagementLayerConfig>,
+    ): void => {
       try {
         Object.assign(validatedConfig, validateHeadConfig(newConfig));
-        console.log('[HeadLayer] Configuration updated');
+        console.log("[HeadLayer] Configuration updated");
 
         // Re-apply head data with new config
         if (self.currentMatch) {
           updateHeadForRoute(self.currentMatch);
         }
       } catch (error) {
-        console.error('[HeadLayer] Failed to update configuration:', error);
+        console.error("[HeadLayer] Failed to update configuration:", error);
       }
     };
 
@@ -351,11 +451,17 @@ export function createHeadManagementLayer(config: HeadManagementLayerConfig = {}
           routeDataCount: routeHeadData.size,
           currentRoute: self.currentMatch?.route.id || null,
           hasCurrentData: !!currentHeadData,
-          config: validatedConfig
+          config: validatedConfig,
         };
       } catch (error) {
-        console.error('[HeadLayer] Failed to get head status:', error);
-        return { isAvailable: false, routeDataCount: 0, currentRoute: null, hasCurrentData: false, config: validatedConfig };
+        console.error("[HeadLayer] Failed to get head status:", error);
+        return {
+          isAvailable: false,
+          routeDataCount: 0,
+          currentRoute: null,
+          hasCurrentData: false,
+          config: validatedConfig,
+        };
       }
     };
 
@@ -363,16 +469,16 @@ export function createHeadManagementLayer(config: HeadManagementLayerConfig = {}
     return {
       // Head manager instance (for advanced usage)
       headManager,
-      
+
       // High-level API
       setHeadData,
       setRouteHeadData,
       getCurrentHeadData,
       removeRouteHeadData,
-      
+
       // Configuration and monitoring
       updateHeadConfig,
-      getHeadStatus
+      getHeadStatus,
     };
   };
 }
@@ -381,7 +487,10 @@ export function createHeadManagementLayer(config: HeadManagementLayerConfig = {}
 export interface HeadManagementLayerExtensions {
   headManager: HeadManager | null;
   setHeadData: (headData: HeadInput) => void;
-  setRouteHeadData: (routeId: string, headData: HeadInput | ((params: any) => HeadInput)) => void;
+  setRouteHeadData: (
+    routeId: string,
+    headData: HeadInput | ((params: any) => HeadInput),
+  ) => void;
   getCurrentHeadData: () => HeadInput | null;
   removeRouteHeadData: (routeId: string) => void;
   updateHeadConfig: (config: Partial<HeadManagementLayerConfig>) => void;
@@ -395,4 +504,5 @@ export interface HeadManagementLayerExtensions {
 }
 
 // Convenience factory with default config
-export const withHeadManagement = (config: HeadManagementLayerConfig = {}) => createHeadManagementLayer(config);
+export const withHeadManagement = (config: HeadManagementLayerConfig = {}) =>
+  createHeadManagementLayer(config);
