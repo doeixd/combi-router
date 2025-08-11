@@ -23,8 +23,8 @@ Combi-Router is built on `@doeixd/combi-parse` for robust URL parsing and uses `
 &nbsp;&nbsp;🌳 **Hierarchical & Introspective**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Routes create natural trees that mirror your app's structure, with built-in utilities to analyze the hierarchy.
 
-&nbsp;&nbsp;⚡ **Powerful Data Loading**  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Run data loaders for nested routes in parallel, with an advanced resource system featuring Suspense, caching, retries, and invalidation.
+&nbsp;&nbsp;⚡ **Powerful Parallel Data Loading**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Automatically run data loaders for all nested routes in parallel (not sequentially), achieving 2-3x faster page loads. Advanced resource system with Suspense, caching, retries, and invalidation.
 
 &nbsp;&nbsp;🧩 **Composable Layer Architecture**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Build your ideal router by mixing and matching feature layers (data, performance, dev tools) or creating your own.
@@ -337,6 +337,44 @@ export const userRoute = extend(usersRoute, param('id', z.number()));
 
 Parameters from parent routes are automatically inherited and merged into a single `params` object.
 
+### Parallel Data Loading
+
+Combi-Router automatically executes loaders for all nested routes **in parallel**, not sequentially. This is a key performance feature that makes deeply nested routes load 2-3x faster.
+
+```typescript
+// Example: Three-level nested route with loaders
+const orgRoute = pipe(
+  route(path('org'), param('orgId', z.string())),
+  loader(async ({ params }) => {
+    // Fetches organization data (500ms)
+    return { org: await fetchOrg(params.orgId) };
+  })
+);
+
+const teamRoute = pipe(
+  extend(orgRoute, path('team'), param('teamId', z.string())),
+  loader(async ({ params }) => {
+    // Fetches team data (400ms)
+    return { team: await fetchTeam(params.teamId) };
+  })
+);
+
+const memberRoute = pipe(
+  extend(teamRoute, path('member'), param('memberId', z.string())),
+  loader(async ({ params }) => {
+    // Fetches member data (300ms)
+    return { member: await fetchMember(params.memberId) };
+  })
+);
+
+// When navigating to /org/1/team/2/member/3:
+// ✅ All three loaders execute simultaneously
+// ✅ Total load time: 500ms (the slowest loader)
+// ❌ Without parallel loading: 1200ms (500+400+300)
+```
+
+**Why it matters:** Traditional routers often load data sequentially, causing waterfalls. Combi-Router's parallel loading ensures optimal performance by default, without any configuration needed.
+
 ### Higher-Order Route Enhancers
 
 Enhance routes with additional functionality:
@@ -512,15 +550,16 @@ import { createWarningSystem } from '@doeixd/combi-router/dev';
 
 The new resource system provides production-ready data loading with advanced features.
 
-### Basic Resources
+### Basic Resources with Parallel Loading
 
 ```typescript
 import { createResource } from '@doeixd/combi-router';
 
-// Simple suspense-based resource
+// Simple suspense-based resource with automatic parallel fetching
 const userRoute = pipe(
   route(path('users'), param('id', z.number())),
   loader(({ params }) => ({
+    // These resources load in parallel automatically
     user: createResource(() => fetchUser(params.id)),
     posts: createResource(() => fetchUserPosts(params.id))
   }))
@@ -1005,6 +1044,87 @@ const overviewRoute = pipe(
     </div>
   `)
 );
+```
+
+### Parallel Data Loading in Nested Routes
+
+One of Combi-Router's most powerful features is **automatic parallel data fetching** for nested routes. When navigating to a deeply nested route, all loaders execute simultaneously, not sequentially.
+
+#### How It Works
+
+```typescript
+// Each route has its own loader
+const workspaceRoute = pipe(
+  extend(appRoute, path('workspace'), param('workspaceId', z.string())),
+  loader(async ({ params }) => {
+    const workspace = await fetchWorkspace(params.workspaceId); // Takes 500ms
+    return { workspace };
+  })
+);
+
+const projectRoute = pipe(
+  extend(workspaceRoute, path('project'), param('projectId', z.string())),
+  loader(async ({ params }) => {
+    const project = await fetchProject(params.projectId); // Takes 400ms
+    return { project };
+  })
+);
+
+const taskRoute = pipe(
+  extend(projectRoute, path('task'), param('taskId', z.string())),
+  loader(async ({ params }) => {
+    const task = await fetchTask(params.taskId); // Takes 300ms
+    return { task };
+  })
+);
+
+// When navigating to /workspace/123/project/456/task/789:
+// ALL three loaders start simultaneously!
+// Total time: ~500ms (the longest loader), NOT 1200ms!
+```
+
+#### Performance Impact
+
+- **Sequential Loading**: 500ms + 400ms + 300ms = **1200ms** ❌
+- **Parallel Loading**: max(500ms, 400ms, 300ms) = **500ms** ✅
+
+This results in **2-3x faster page loads** for deeply nested routes!
+
+#### Configuration
+
+```typescript
+const router = createLayeredRouter(routes)
+  (createCoreNavigationLayer())
+  (createLoaderLayer({
+    parallelLoading: true,  // Enabled by default
+    loaderTimeout: 10000,   // Timeout applies to each loader individually
+  }))
+  ();
+```
+
+#### Best Practices
+
+```typescript
+// ✅ Good: Independent loaders using URL params
+const teamRoute = pipe(
+  extend(orgRoute, path('team'), param('teamId', z.string())),
+  loader(async ({ params }) => {
+    // Uses teamId from URL, doesn't wait for parent data
+    const team = await fetchTeam(params.teamId);
+    return { team };
+  })
+);
+
+// ✅ Good: Access parent data after parallel loading
+const projectView = enhancedView(({ match }) => {
+  // All data is available after parallel loading completes
+  const workspace = match.parent?.data?.workspace;
+  const project = match.data.project;
+  
+  return html`
+    <h1>${workspace.name} / ${project.name}</h1>
+  `;
+});
 ```
 
 #### Outlet Configuration
