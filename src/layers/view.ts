@@ -228,13 +228,21 @@ export function createViewLayer(
       }
 
       // 3. Render Error State: If a navigation error occurred, show the error view.
-      if (lastError && currentConfig.errorView) {
+      // Skip this for 404 errors - they should show the not found view instead
+      if (
+        lastError &&
+        currentConfig.errorView &&
+        !lastError.message.includes("No route matches")
+      ) {
         render(currentConfig.errorView(lastError));
         return;
       }
 
-      // 4. Render Not Found State: If no route was matched.
-      if (!match) {
+      // 4. Render Not Found State: If no route was matched or if we have a 404 error.
+      if (
+        !match ||
+        (lastError && lastError.message.includes("No route matches"))
+      ) {
         if (currentConfig.notFoundView) {
           render(currentConfig.notFoundView());
         } else {
@@ -386,7 +394,10 @@ export function createViewLayer(
           route: error.route,
           params: error.params,
         };
-        handleStateChange(router.currentMatch);
+
+        // For 404 errors (no route matches), we should render as if there's no match
+        const is404Error = error?.message?.includes("No route matches");
+        handleStateChange(is404Error ? null : router.currentMatch);
       });
 
       cleanupFunctions.push(unsubStart, unsubComplete, unsubError);
@@ -439,22 +450,15 @@ export function createViewLayer(
         : null,
     );
 
-    if (initialMatch) {
-      console.log("[ViewLayer] Triggering initial navigation to:", initialPath);
-      // Trigger initial navigation which will cause proper rendering via lifecycle hooks
-      router.navigate(initialPath).catch((error) => {
-        console.error("[ViewLayer] Initial navigation failed:", error);
-        lastError = {
-          type: NavigationErrorType.Unknown,
-          message: `Initial navigation failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-          originalError: error,
-        };
-        handleStateChange(null);
-      });
+    // Synchronously set the initial match if found, avoiding async navigation
+    if (initialMatch && !router.currentMatch) {
+      console.log("[ViewLayer] Setting initial match synchronously");
+      // Set the match directly to avoid triggering async navigation
+      router._setCurrentMatch(initialMatch);
+      handleStateChange(initialMatch);
     } else {
-      console.log("[ViewLayer] No initial match found, rendering 404");
-      // No initial match found, render 404
-      handleStateChange(null);
+      console.log("[ViewLayer] Using existing currentMatch or rendering 404");
+      handleStateChange(router.currentMatch);
     }
 
     // Return the layer's public API and cleanup logic.

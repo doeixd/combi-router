@@ -16,10 +16,10 @@ import {
   success,
   failure,
   sepBy,
-} from '@doeixd/combi-parse';
-import type { StandardSchemaV1 } from '@standard-schema/spec';
-import type { RouteMatcher } from './types';
-import { validateSafely } from './validation';
+} from "@doeixd/combi-parse";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
+import type { RouteMatcher } from "./types";
+import { validateSafely } from "./validation";
 
 // =================================================================
 // ---------------------- ROUTE MATCHERS ---------------------------
@@ -34,7 +34,27 @@ import { validateSafely } from './validation';
  */
 export function path(segment: string): RouteMatcher {
   // Ensure path segments don't pollute params by mapping their parser result to an empty object
-  return { type: 'path', parser: str('/').keepRight(str(segment)).map(() => ({})), build: () => `/${segment}` };
+  // Handle segments that already start with '/'
+  const normalizedSegment = segment.startsWith("/")
+    ? segment.substring(1)
+    : segment;
+
+  // Special case for root path
+  if (normalizedSegment === "") {
+    return {
+      type: "path",
+      parser: str("/").map(() => ({})),
+      build: () => "/",
+    };
+  }
+
+  return {
+    type: "path",
+    parser: str("/")
+      .keepRight(str(normalizedSegment))
+      .map(() => ({})),
+    build: () => `/${normalizedSegment}`,
+  };
 }
 
 /**
@@ -44,12 +64,14 @@ export function path(segment: string): RouteMatcher {
  * // Matches "/products" and "/products/all"
  * const productsRoute = route(path('products'), path.optional('all'));
  */
-path.optional = function(segment: string): RouteMatcher {
+path.optional = function (segment: string): RouteMatcher {
   return {
-    type: 'optionalPath',
+    type: "optionalPath",
     paramName: segment,
-    parser: optionalParser(str('/' + segment)).map(res => res ? { [segment]: true } : { [segment]: undefined }),
-    build: (params) => (params[segment] ? `/${segment}` : '')
+    parser: optionalParser(str("/" + segment)).map((res) =>
+      res ? { [segment]: true } : { [segment]: undefined },
+    ),
+    build: (params) => (params[segment] ? `/${segment}` : ""),
   };
 };
 
@@ -62,25 +84,25 @@ path.optional = function(segment: string): RouteMatcher {
  * // Matches "/files/a/b/c" -> params.filePath === ['a', 'b', 'c']
  * const fileRoute = route(path('files'), path.wildcard('filePath'));
  */
-path.wildcard = function(name = 'wildcard'): RouteMatcher {
+path.wildcard = function (name = "wildcard"): RouteMatcher {
   // Use regex to match path segments efficiently
   const segmentParser = regex(/[^/?#]+/);
 
   // Parser for wildcard path segments: leading slash followed by segments separated by slashes
-  const wildcardParser = str('/')
-    .keepRight(sepBy(segmentParser, str('/')))
-    .map(segments => ({ [name]: segments }));
+  const wildcardParser = str("/")
+    .keepRight(sepBy(segmentParser, str("/")))
+    .map((segments) => ({ [name]: segments }));
 
   return {
-    type: 'wildcard',
+    type: "wildcard",
     paramName: name,
     parser: wildcardParser,
     build: (params) => {
       if (Array.isArray(params[name])) {
-        return `/${params[name].map(encodeURIComponent).join('/')}`;
+        return `/${params[name].map(encodeURIComponent).join("/")}`;
       }
       return null;
-    }
+    },
   };
 };
 
@@ -93,34 +115,47 @@ path.wildcard = function(name = 'wildcard'): RouteMatcher {
  * // Matches "/users/123" and provides `params.id` as a number.
  * // const userRoute = route(path('users'), param('id', YourNumberSchema)); // Example usage
  */
-export function param<TInput, TOutput>(name: string, schema: StandardSchemaV1<TInput, TOutput>): RouteMatcher {
+export function param<TInput, TOutput>(
+  name: string,
+  schema: StandardSchemaV1<TInput, TOutput>,
+): RouteMatcher {
   // Create a more sophisticated parameter parser using combi-parse
   const paramValueParser = regex(/[^/?#]+/);
-  
-  const paramParser = str('/')
+
+  const paramParser = str("/")
     .keepRight(paramValueParser)
-    .chain(value =>
-      new Parser(state => {
-        // Smart type coercion: attempt to convert to number if it looks like one
-        const valueToParse: unknown = /^\d+(\.\d+)?$/.test(value) ? Number(value) : value;
-        
-        // Use enhanced validation with better error context
-        const validationResult = validateSafely(schema, valueToParse, `Parameter "${name}"`);
-        
-        if (!validationResult.success) {
-          return failure(validationResult.error!, state);
-        }
-        
-        return success({ [name]: validationResult.value }, state);
-      })
+    .chain(
+      (value) =>
+        new Parser((state) => {
+          // Smart type coercion: attempt to convert to number if it looks like one
+          const valueToParse: unknown = /^\d+(\.\d+)?$/.test(value)
+            ? Number(value)
+            : value;
+
+          // Use enhanced validation with better error context
+          const validationResult = validateSafely(
+            schema,
+            valueToParse,
+            `Parameter "${name}"`,
+          );
+
+          if (!validationResult.success) {
+            return failure(validationResult.error!, state);
+          }
+
+          return success({ [name]: validationResult.value }, state);
+        }),
     );
 
   return {
-    type: 'param',
+    type: "param",
     paramName: name,
     schema,
     parser: paramParser,
-    build: (params) => (params[name] !== undefined && params[name] !== null ? `/${encodeURIComponent(params[name])}` : null),
+    build: (params) =>
+      params[name] !== undefined && params[name] !== null
+        ? `/${encodeURIComponent(params[name])}`
+        : null,
   };
 }
 
@@ -134,13 +169,19 @@ export function param<TInput, TOutput>(name: string, schema: StandardSchemaV1<TI
  * // Matches "/items?page=2" and provides `params.page` as a number.
  * // const listRoute = route(path('items'), query('page', YourNumberSchema)); // Example usage
  */
-export function query<TInput, TOutput>(name: string, schema: StandardSchemaV1<TInput, TOutput>): RouteMatcher {
+export function query<TInput, TOutput>(
+  name: string,
+  schema: StandardSchemaV1<TInput, TOutput>,
+): RouteMatcher {
   return {
-    type: 'query',
+    type: "query",
     paramName: name,
     schema,
     parser: new Parser((state) => success({ name, schema }, state)), // schema is passed to _processParams
-    build: (params) => (params[name] !== undefined ? `${name}=${encodeURIComponent(params[name])}` : null),
+    build: (params) =>
+      params[name] !== undefined
+        ? `${name}=${encodeURIComponent(params[name])}`
+        : null,
   };
 }
 
@@ -152,11 +193,14 @@ export function query<TInput, TOutput>(name: string, schema: StandardSchemaV1<TI
  * // Matches "/search?q=term" or "/search". `params.q` will be string or undefined if schema allows.
  * // const searchRoute = route(path('search'), query.optional('q', YourOptionalStringSchema)); // Example usage
  */
-query.optional = <TInput, TOutput>(name: string, schema: StandardSchemaV1<TInput, TOutput>): RouteMatcher => {
+query.optional = <TInput, TOutput>(
+  name: string,
+  schema: StandardSchemaV1<TInput, TOutput>,
+): RouteMatcher => {
   // Standard Schema doesn't have a generic .optional() modifier like Zod.
   // The schema itself must define optionality (e.g. by allowing `undefined` input/output).
   return query(name, schema);
 };
 
 /** A matcher that ensures the path has no remaining segments to parse. */
-export const end: RouteMatcher = { type: 'end', parser: eof, build: () => '' };
+export const end: RouteMatcher = { type: "end", parser: eof, build: () => "" };

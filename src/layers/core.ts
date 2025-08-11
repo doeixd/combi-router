@@ -98,6 +98,35 @@ import type {
   ComposableRouter,
   NavigationOptions,
 } from "../core/layer-types";
+import type {
+  ErrorStrategy,
+  ErrorStrategyConfig,
+} from "./strategies/error-strategy";
+import { createErrorStrategy } from "./strategies/error-strategy";
+
+/**
+ * Configuration options for the core navigation layer.
+ */
+export interface CoreNavigationLayerConfig {
+  /**
+   * Error handling strategy configuration.
+   * - 'throw': All errors cause promise rejection (default, backward compatible)
+   * - 'graceful': Errors are handled through lifecycle hooks only
+   * - 'selective': Custom control over which errors throw
+   * - Custom ErrorStrategy object for full control
+   */
+  errorStrategy?: ErrorStrategyConfig;
+
+  /**
+   * Options for selective error strategy (when errorStrategy is 'selective').
+   */
+  selectiveStrategyOptions?: {
+    throwNotFound?: boolean;
+    throwLoaderError?: boolean;
+    throwGuardRejection?: boolean;
+    throwNavigationError?: boolean;
+  };
+}
 
 /**
  * Creates the core navigation layer that provides essential routing functionality.
@@ -125,7 +154,15 @@ import type {
  *   ();
  * ```
  */
-export function createCoreNavigationLayer() {
+export function createCoreNavigationLayer(
+  config: CoreNavigationLayerConfig = {},
+) {
+  // Initialize error strategy
+  const strategy = createErrorStrategy(
+    config.errorStrategy || "throw",
+    config.selectiveStrategyOptions,
+  );
+
   // Private state for this layer
   let navigationId = 0;
   let navigationTimeout: number | undefined;
@@ -230,9 +267,26 @@ export function createCoreNavigationLayer() {
           ? self.context()
           : self.context || self;
       if (!newMatch && !(context as any).fallbackRoute) {
-        throw new Error(
+        const error = new Error(
           `No route matches: ${url} and no fallback route configured`,
         );
+
+        // Fire navigation error hook for 404
+        await callLifecycleHook("onNavigationError", error, {
+          url,
+          isPopState,
+          options,
+          type: "not-found",
+        });
+
+        // Check strategy for whether to throw
+        if (strategy.shouldThrowNotFound(url)) {
+          throw error;
+        }
+
+        // Clear navigation state and return false
+        self._setCurrentNavigation(null);
+        return false;
       }
 
       let targetMatch = newMatch;
@@ -241,16 +295,37 @@ export function createCoreNavigationLayer() {
           `[CoreLayer] No route matches "${url}", using fallback route`,
         );
         const fallbackRoute = (context as any).fallbackRoute;
-        const fallbackUrl = buildURL(self, fallbackRoute, {});
-        if (fallbackUrl) {
-          targetMatch = matchRoute(self, fallbackUrl);
-        }
+        // Create a match for the fallback route directly
+        targetMatch = {
+          route: fallbackRoute,
+          params: {},
+          pathname: url,
+          search: "",
+          hash: "",
+        };
       }
 
       if (!targetMatch) {
-        throw new Error(
+        const error = new Error(
           `No route matches: ${url} and fallback route resolution failed`,
         );
+
+        // Fire navigation error hook
+        await callLifecycleHook("onNavigationError", error, {
+          url,
+          isPopState,
+          options,
+          type: "not-found",
+        });
+
+        // Check strategy for whether to throw
+        if (strategy.shouldThrowNotFound(url)) {
+          throw error;
+        }
+
+        // Clear navigation state and return false
+        self._setCurrentNavigation(null);
+        return false;
       }
 
       // Create navigation controller
@@ -329,7 +404,7 @@ export function createCoreNavigationLayer() {
 
       self._setCurrentNavigation(null);
 
-      // Fire navigation error hook
+      // Always fire navigation error hook (separate error channel)
       await callLifecycleHook("onNavigationError", error, {
         url,
         isPopState,
@@ -351,8 +426,26 @@ export function createCoreNavigationLayer() {
         });
       }
 
-      // Re-throw critical errors (like loader failures) instead of returning false
-      throw error;
+      // Check strategy to determine if we should throw
+      let shouldThrow = false;
+
+      // Determine error type and check strategy
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("Loader")) {
+        shouldThrow = strategy.shouldThrowLoaderError(error as Error);
+      } else if (errorMessage.includes("Guard")) {
+        shouldThrow = strategy.shouldThrowGuardRejection(error);
+      } else {
+        shouldThrow = strategy.shouldThrowNavigationError(error as Error);
+      }
+
+      if (shouldThrow) {
+        throw error;
+      }
+
+      // Graceful handling - return false
+      return false;
     }
   }
 

@@ -32,6 +32,9 @@ Combi-Router is built on `@doeixd/combi-parse` for robust URL parsing and uses `
 &nbsp;&nbsp; 🛡️ **Advanced Navigation & Guards**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Navigate with detailed results, cancellation support, and robust, type-safe route guards for fine-grained access control.
 
+&nbsp;&nbsp;🎨 **Enhanced View Layer**  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Universal template support with morphdom integration, true nested routing with outlets, and support for any templating system.
+
 &nbsp;&nbsp;🔎 **Integrated SEO & Head Management**  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Dynamically manage document head tags, including titles, meta descriptions, and social cards, directly from your route definitions.
 
@@ -362,6 +365,14 @@ Combi-Router now features a modular architecture optimized for tree-shaking and 
 ```typescript
 // Core routing functionality (always included)
 import { route, extend, createRouter } from '@doeixd/combi-router';
+
+// Enhanced view layer with morphdom and template support
+import { 
+  createEnhancedViewLayer,
+  enhancedView,
+  lazyView,
+  conditionalView
+} from '@doeixd/combi-router/enhanced-view';
 
 // Advanced data loading and caching
 import { createAdvancedResource, resourceState } from '@doeixd/combi-router/data';
@@ -846,6 +857,554 @@ if (result.success) {
   // Handle success
 } else {
   // Handle specific error types
+}
+```
+
+<br />
+
+## 🎨 Enhanced View Layer
+
+The Enhanced View Layer extends Combi-Router with advanced DOM rendering capabilities, efficient updates through morphdom, and true nested routing support.
+
+### Universal Template Support
+
+Work with any templating system - lit-html, uhtml, Handlebars, or plain strings:
+
+```typescript
+import { createEnhancedViewLayer, enhancedView } from '@doeixd/combi-router/enhanced-view';
+import { html } from 'lit-html';
+
+// Using lit-html templates
+const userRoute = pipe(
+  route(path('user'), param('id', z.string()), end),
+  enhancedView(({ match }) => html`
+    <div class="user-profile">
+      <h1>${match.data.user.name}</h1>
+      <p>Email: ${match.data.user.email}</p>
+    </div>
+  `)
+);
+
+// Using custom template engines
+import Handlebars from 'handlebars';
+
+const template = Handlebars.compile(`
+  <div class="product">
+    <h2>{{name}}</h2>
+    <p>Price: \${{price}}</p>
+  </div>
+`);
+
+const productRoute = pipe(
+  route(path('product'), param('id', z.string()), end),
+  enhancedView(({ match }) => ({
+    html: template(match.data.product)
+  }))
+);
+
+// Configure the router with enhanced view layer
+const router = createLayeredRouter(routes)
+  (createCoreNavigationLayer())
+  (createEnhancedViewLayer({
+    root: '#app',
+    useMorphdom: true,
+    templateRenderer: (result, container) => {
+      // Custom renderer for your template library
+      if (result._$litType$) {
+        litRender(result, container);
+      }
+    }
+  }))
+  ();
+```
+
+### Morphdom Integration
+
+Enable efficient DOM patching that preserves form state, focus, and scroll position:
+
+```typescript
+import morphdom from 'morphdom';
+import { setMorphdom } from '@doeixd/combi-router/enhanced-view';
+
+// Provide morphdom implementation
+setMorphdom(morphdom);
+
+// Configure morphdom behavior
+const router = createLayeredRouter(routes)
+  (createCoreNavigationLayer())
+  (createEnhancedViewLayer({
+    root: '#app',
+    useMorphdom: true,
+    morphdomOptions: {
+      onBeforeElUpdated: (fromEl, toEl) => {
+        // Preserve focus
+        if (fromEl === document.activeElement) {
+          return false;
+        }
+        // Preserve form values
+        if (fromEl.tagName === 'INPUT') {
+          toEl.value = fromEl.value;
+        }
+        return true;
+      },
+      onElUpdated: (el) => {
+        // Add animation classes
+        el.classList.add('updated');
+        setTimeout(() => el.classList.remove('updated'), 300);
+      }
+    }
+  }))
+  ();
+```
+
+### True Nested Routing with Outlets
+
+Leverage the hierarchical route structure for automatic nested view rendering:
+
+```typescript
+// Parent route with outlet
+const appRoute = pipe(
+  route(path('')),
+  enhancedView(() => html`
+    <div class="app">
+      <header>
+        <nav>
+          <a href="/">Home</a>
+          <a href="/dashboard">Dashboard</a>
+        </nav>
+      </header>
+      <!-- Child routes render here automatically -->
+      <main router-outlet></main>
+    </div>
+  `)
+);
+
+// Dashboard with its own nested outlet
+const dashboardRoute = pipe(
+  extend(appRoute, path('dashboard')),
+  enhancedView(({ match }) => html`
+    <div class="dashboard">
+      <aside>
+        <a href="/dashboard/overview">Overview</a>
+        <a href="/dashboard/analytics">Analytics</a>
+      </aside>
+      <!-- Nested child routes render here -->
+      <section router-outlet router-outlet-parent="${match.route.id}">
+      </section>
+    </div>
+  `)
+);
+
+// Child routes automatically render in parent outlets
+const overviewRoute = pipe(
+  extend(dashboardRoute, path('overview'), end),
+  enhancedView(() => html`
+    <div class="overview">
+      <h2>Dashboard Overview</h2>
+      <p>Your stats and metrics...</p>
+    </div>
+  `)
+);
+```
+
+#### Outlet Configuration
+
+```html
+<!-- Basic outlet -->
+<div router-outlet></div>
+
+<!-- Outlet with specific parent route -->
+<div router-outlet router-outlet-parent="42"></div>
+
+<!-- Outlet with transitions -->
+<div 
+  router-outlet
+  router-outlet-enter="fade-in"
+  router-outlet-leave="fade-out"
+  router-outlet-duration="300">
+</div>
+
+<!-- Preserve scroll position -->
+<div router-outlet router-outlet-preserve-scroll></div>
+```
+
+### Advanced View Functions
+
+#### Lazy Loading Views
+
+```typescript
+const route = pipe(
+  route(path('heavy'), end),
+  lazyView(
+    () => import('./heavy-view').then(m => m.default),
+    () => '<div>Loading...</div>' // Loading view while importing
+  )
+);
+```
+
+#### Conditional Views
+
+```typescript
+const route = pipe(
+  route(path('profile'), param('id'), end),
+  conditionalView(
+    ({ match }) => match.data.user.isAdmin,
+    ({ match }) => html`<admin-dashboard user="${match.data.user}"></admin-dashboard>`,
+    ({ match }) => html`<user-profile user="${match.data.user}"></user-profile>`
+  )
+);
+```
+
+#### Error Boundary Views
+
+```typescript
+const route = pipe(
+  route(path('fragile'), end),
+  errorBoundaryView(
+    ({ match }) => riskyRenderFunction(match),
+    (error) => html`
+      <div class="error">
+        <h2>Something went wrong</h2>
+        <p>${error.message}</p>
+      </div>
+    `
+  )
+);
+```
+
+#### Composed Views
+
+```typescript
+const route = pipe(
+  route(path('complex'), end),
+  composeViews({
+    header: ({ match }) => html`<header>${match.data.title}</header>`,
+    sidebar: () => html`<nav>Menu items...</nav>`,
+    content: ({ match }) => html`<main>${match.data.content}</main>`
+  }, (parts) => html`
+    <div class="layout">
+      ${parts.header}
+      <div class="body">
+        ${parts.sidebar}
+        ${parts.content}
+      </div>
+    </div>
+  `)
+);
+```
+
+#### Cached Views
+
+```typescript
+const route = pipe(
+  route(path('expensive'), param('id'), end),
+  cachedView(
+    ({ match }) => expensiveRender(match.data),
+    ({ match }) => `cache-${match.params.id}`, // Cache key
+    60000 // Cache for 1 minute
+  )
+);
+```
+
+### Configuration Options
+
+```typescript
+interface EnhancedViewLayerConfig {
+  // Root element for rendering (required)
+  root: HTMLElement | string;
+  
+  // Enable morphdom for efficient updates
+  useMorphdom?: boolean;
+  
+  // Morphdom configuration
+  morphdomOptions?: MorphdomOptions;
+  
+  // Custom template renderer for your library
+  templateRenderer?: (result: any, container: HTMLElement) => void;
+  
+  // State views
+  loadingView?: () => any;
+  errorView?: (error: NavigationError) => any;
+  notFoundView?: () => any;
+  
+  // Nested routing support
+  enableOutlets?: boolean;
+  outletAttribute?: string; // default: 'router-outlet'
+}
+```
+
+### Why Enhanced View Layer?
+
+The enhanced view layer solves common SPA rendering challenges:
+
+- **No Template Lock-in**: Use lit-html, uhtml, Handlebars, or any other template system
+- **Efficient Updates**: Morphdom ensures only changed DOM nodes are updated
+- **True Nested Routing**: Hierarchical routes automatically manage nested views through outlets
+- **Progressive Enhancement**: Start with simple string templates, upgrade to advanced features as needed
+- **Performance Optimized**: Built-in caching, lazy loading, and smart update strategies
+- **Developer Friendly**: Intuitive outlet system mirrors your route hierarchy
+
+### Enhanced View Layer API Reference
+
+#### Core Functions
+
+##### `createEnhancedViewLayer(config)`
+Creates an enhanced view layer with morphdom support and nested routing.
+
+```typescript
+function createEnhancedViewLayer(config: EnhancedViewLayerConfig): RouterLayer
+
+interface EnhancedViewLayerConfig {
+  root: HTMLElement | string;              // Root element for rendering (required)
+  useMorphdom?: boolean;                   // Enable morphdom for efficient updates
+  morphdomOptions?: MorphdomOptions;       // Morphdom configuration
+  templateRenderer?: (result: TemplateResult, container: HTMLElement) => void;
+  loadingView?: () => string | Node | TemplateResult;
+  errorView?: (error: NavigationError) => string | Node | TemplateResult;
+  notFoundView?: () => string | Node | TemplateResult;
+  linkSelector?: string;                   // Custom link selector (default: 'a[href]')
+  disableLinkInterception?: boolean;       // Disable automatic SPA navigation
+  enableOutlets?: boolean;                 // Enable nested routing outlets
+  outletAttribute?: string;                // Outlet attribute name (default: 'router-outlet')
+}
+```
+
+##### `enhancedView(factory)`
+Creates an enhanced view for a route supporting multiple template formats.
+
+```typescript
+function enhancedView<TParams>(
+  factory: (context: ViewContext<TParams>) => 
+    string | Node | TemplateResult | HTMLTemplateResult | Promise<any>
+): (route: Route<TParams>) => Route<TParams>
+
+interface ViewContext<TParams> {
+  match: RouteMatch<TParams>;  // Full route match with params, data, etc.
+}
+```
+
+##### `htmlTemplate(html, options)`
+Creates an HTML template result with lifecycle hooks.
+
+```typescript
+function htmlTemplate(
+  html: string,
+  options?: {
+    afterRender?: (element: HTMLElement) => void;
+    beforeRender?: () => void;
+  }
+): HTMLTemplateResult
+```
+
+##### `lazyView(loader, loadingView)`
+Creates a lazily loaded view with optional loading state.
+
+```typescript
+function lazyView<TParams>(
+  loader: () => Promise<EnhancedViewFactory<TParams>>,
+  loadingView?: EnhancedViewFactory<TParams>
+): (route: Route<TParams>) => Route<TParams>
+```
+
+##### `conditionalView(condition, trueView, falseView)`
+Renders different views based on a condition.
+
+```typescript
+function conditionalView<TParams>(
+  condition: (context: ViewContext<TParams>) => boolean,
+  trueView: EnhancedViewFactory<TParams>,
+  falseView: EnhancedViewFactory<TParams>
+): (route: Route<TParams>) => Route<TParams>
+```
+
+##### `errorBoundaryView(view, errorView)`
+Wraps a view with error handling.
+
+```typescript
+function errorBoundaryView<TParams>(
+  view: EnhancedViewFactory<TParams>,
+  errorView: (error: Error) => string | Node | TemplateResult
+): (route: Route<TParams>) => Route<TParams>
+```
+
+##### `composeViews(parts, composer)`
+Composes multiple view parts into a single view.
+
+```typescript
+function composeViews<TParams, TParts extends Record<string, any>>(
+  parts: { [K in keyof TParts]: EnhancedViewFactory<TParams> },
+  composer: (parts: TParts) => string | Node | TemplateResult
+): (route: Route<TParams>) => Route<TParams>
+```
+
+##### `cachedView(factory, keyFn, ttl)`
+Caches rendered views for performance.
+
+```typescript
+function cachedView<TParams>(
+  factory: EnhancedViewFactory<TParams>,
+  keyFn: (context: ViewContext<TParams>) => string,
+  ttl?: number  // Time to live in milliseconds (default: 60000)
+): (route: Route<TParams>) => Route<TParams>
+```
+
+##### `streamingView(generator)`
+Creates a streaming view that updates progressively.
+
+```typescript
+function streamingView<TParams>(
+  generator: (context: ViewContext<TParams>) => 
+    AsyncGenerator<string | Node | TemplateResult>
+): (route: Route<TParams>) => Route<TParams>
+```
+
+#### Morphdom Integration
+
+##### `setMorphdom(morphdom)`
+Sets the morphdom implementation to use.
+
+```typescript
+function setMorphdom(morphdom: MorphdomFn): void
+
+type MorphdomFn = (
+  fromNode: Element,
+  toNode: Element | string,
+  options?: MorphdomOptions
+) => Element
+```
+
+##### `createMorphdomIntegration(options)`
+Creates a morphdom configuration with defaults.
+
+```typescript
+function createMorphdomIntegration(options?: Partial<MorphdomOptions>): {
+  morphdom: MorphdomFn;
+  options: MorphdomOptions;
+}
+
+interface MorphdomOptions {
+  childrenOnly?: boolean;
+  onBeforeElUpdated?: (fromEl: Element, toEl: Element) => boolean;
+  onElUpdated?: (el: Element) => void;
+  onBeforeNodeAdded?: (node: Node) => Node | boolean;
+  onNodeAdded?: (node: Node) => void;
+  onBeforeNodeDiscarded?: (node: Node) => boolean;
+  onNodeDiscarded?: (node: Node) => void;
+  onBeforeElChildrenUpdated?: (fromEl: Element, toEl: Element) => boolean;
+}
+```
+
+#### Nested Routing
+
+##### `createNestedRouter(config)`
+Creates a nested router for parent-child route relationships.
+
+```typescript
+function createNestedRouter(config: NestedRouterConfig): {
+  parent: Route<any>;
+  children: Route<any>[];
+  outlets: Map<string, RouterOutlet>;
+  findChildMatch: (match: RouteMatch | null) => RouteMatch | null;
+  renderChild: (match: RouteMatch | null, outlet?: HTMLElement) => void;
+  destroy: () => void;
+}
+
+interface NestedRouterConfig {
+  parentRoute: Route<any>;
+  childRoutes: Route<any>[];
+  outlet?: HTMLElement | string;
+  autoManageOutlet?: boolean;
+}
+```
+
+##### `createRouterOutlet(router, config)`
+Creates a router outlet for automatic child route rendering.
+
+```typescript
+function createRouterOutlet(
+  router: ComposableRouter<any>,
+  config: OutletConfig
+): RouterOutlet & {
+  update: (match: RouteMatch | null) => void;
+  clear: () => void;
+  destroy: () => void;
+}
+
+interface OutletConfig {
+  element: HTMLElement;
+  parentRouteId?: number;
+  render?: (match: RouteMatch | null, element: HTMLElement) => void;
+  transition?: {
+    enter?: string;
+    leave?: string;
+    duration?: number;
+  };
+  preserveScroll?: boolean;
+  loadingView?: () => string | Node;
+  errorView?: (error: Error) => string | Node;
+}
+```
+
+##### `setupAutoOutlets(router, routes, container, attribute)`
+Automatically discovers and sets up outlets in a container.
+
+```typescript
+function setupAutoOutlets(
+  router: ComposableRouter<any>,
+  routes: Route<any>[],
+  container?: HTMLElement,  // default: document.body
+  attribute?: string        // default: 'router-outlet'
+): () => void  // Returns cleanup function
+```
+
+#### Layer Extensions
+
+The enhanced view layer provides these methods on the router:
+
+```typescript
+interface EnhancedViewLayerExtensions {
+  rerender(): void;                                    // Re-render current view
+  getRootElement(): HTMLElement | null;                // Get root element
+  updateConfig(config: Partial<EnhancedViewLayerConfig>): void;
+  registerOutlet(outlet: RouterOutlet): void;          // Register outlet
+  unregisterOutlet(outlet: RouterOutlet): void;        // Unregister outlet
+  morphUpdate(content: string | Node): void;           // Force morphdom update
+}
+
+// Access layer extensions
+const viewLayer = router.getLayer('EnhancedViewLayer');
+viewLayer.rerender();
+viewLayer.morphUpdate('<div>New content</div>');
+```
+
+#### Type Definitions
+
+```typescript
+// Template result types for various libraries
+interface TemplateResult {
+  strings?: TemplateStringsArray;
+  values?: unknown[];
+  _$litType$?: number;  // lit-html marker
+  [key: string]: any;
+}
+
+interface HTMLTemplateResult {
+  template?: HTMLTemplateElement;
+  render?: () => Node | string;
+  html?: string;
+  dom?: DocumentFragment;
+}
+
+// Enhanced view factory supporting multiple return types
+type EnhancedViewFactory<TParams = any> = (
+  context: ViewContext<TParams>
+) => string | Node | TemplateResult | HTMLTemplateResult | Promise<any>;
+
+// Router outlet interface
+interface RouterOutlet {
+  element: HTMLElement;
+  parentRouteId?: number;
+  render: (match: RouteMatch | null) => void;
 }
 ```
 

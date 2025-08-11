@@ -27,7 +27,19 @@ export * from "../core/layered-router";
 export {
   createCoreNavigationLayer,
   type CoreNavigationExtensions,
+  type CoreNavigationLayerConfig,
 } from "./core";
+
+// Error strategy exports
+export {
+  type ErrorStrategy,
+  type ErrorStrategyConfig,
+  createErrorStrategy,
+  ThrowErrorStrategy,
+  GracefulErrorStrategy,
+  SelectiveErrorStrategy,
+  ErrorStrategies,
+} from "./strategies/error-strategy";
 
 // Convenience re-exports (already exported above)
 

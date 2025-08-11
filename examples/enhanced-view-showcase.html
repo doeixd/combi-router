@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enhanced View Layer Showcase - Combi-Router</title>
+
+  <style>
+    /* Reset and Base Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: #f5f7fa;
+    }
+
+    /* App Shell */
+    .app {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header Styles */
+    .app-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1rem 2rem;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .app-header nav {
+      display: flex;
+      gap: 2rem;
+      align-items: center;
+    }
+
+    .app-header a {
+      color: white;
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      transition: background 0.3s;
+    }
+
+    .app-header a:hover {
+      background: rgba(255,255,255,0.1);
+    }
+
+    .app-header a.active {
+      background: rgba(255,255,255,0.2);
+      font-weight: 600;
+    }
+
+    /* Main Content */
+    .app-content {
+      flex: 1;
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Dashboard Layout */
+    .dashboard {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 2rem;
+      height: 100%;
+    }
+
+    .dashboard-sidebar {
+      background: white;
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .dashboard-sidebar h2 {
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
+      color: #667eea;
+    }
+
+    .dashboard-sidebar nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .dashboard-sidebar a {
+      color: #555;
+      text-decoration: none;
+      padding: 0.75rem 1rem;
+      border-radius: 4px;
+      transition: all 0.3s;
+    }
+
+    .dashboard-sidebar a:hover {
+      background: #f0f2f5;
+      color: #667eea;
+    }
+
+    .dashboard-sidebar a.active {
+      background: #667eea;
+      color: white;
+    }
+
+    .dashboard-content {
+      background: white;
+      border-radius: 8px;
+      padding: 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    /* Users Layout */
+    .users-layout {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 2rem;
+      height: 100%;
+    }
+
+    .users-list {
+      background: white;
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .users-list h2 {
+      margin-bottom: 1rem;
+      color: #667eea;
+    }
+
+    .users-list ul {
+      list-style: none;
+    }
+
+    .users-list li {
+      margin-bottom: 0.5rem;
+    }
+
+    .users-list a {
+      display: block;
+      padding: 0.75rem;
+      color: #555;
+      text-decoration: none;
+      border-radius: 4px;
+      transition: all 0.3s;
+    }
+
+    .users-list a:hover {
+      background: #f0f2f5;
+      color: #667eea;
+    }
+
+    .users-list a.active {
+      background: #667eea;
+      color: white;
+    }
+
+    .user-detail {
+      background: white;
+      border-radius: 8px;
+      padding: 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .user-detail.admin {
+      border-top: 4px solid #f56565;
+    }
+
+    .user-detail h3 {
+      margin-bottom: 1rem;
+      color: #333;
+    }
+
+    .user-detail p {
+      margin-bottom: 0.5rem;
+      color: #666;
+    }
+
+    .admin-controls {
+      margin-top: 1.5rem;
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .admin-controls button {
+      padding: 0.5rem 1rem;
+      background: #f56565;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .admin-controls button:hover {
+      background: #e53e3e;
+    }
+
+    /* Stats Cards */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .stat-card h4 {
+      font-size: 0.9rem;
+      opacity: 0.9;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-card p {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+
+    /* Settings Form */
+    .settings section {
+      margin-bottom: 2rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .settings section:last-child {
+      border-bottom: none;
+    }
+
+    .settings h4 {
+      margin-bottom: 1rem;
+      color: #667eea;
+    }
+
+    .settings select,
+    .settings input {
+      padding: 0.5rem;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+
+    .settings label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+    }
+
+    /* Loading State */
+    .loading,
+    .global-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid #e5e7eb;
+      border-top-color: #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading p {
+      margin-top: 1rem;
+      color: #666;
+    }
+
+    /* Error States */
+    .error,
+    .error-boundary,
+    .global-error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .error h2,
+    .error-boundary h2 {
+      color: #dc2626;
+      margin-bottom: 1rem;
+    }
+
+    .error-message {
+      color: #7f1d1d;
+      margin-bottom: 1.5rem;
+    }
+
+    .error button,
+    .error-boundary button {
+      padding: 0.75rem 1.5rem;
+      background: #dc2626;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background 0.3s;
+    }
+
+    .error button:hover,
+    .error-boundary button:hover {
+      background: #b91c1c;
+    }
+
+    /* 404 Not Found */
+    .not-found {
+      text-align: center;
+      padding: 4rem 2rem;
+    }
+
+    .not-found h1 {
+      font-size: 6rem;
+      color: #667eea;
+      margin-bottom: 1rem;
+    }
+
+    .not-found p {
+      font-size: 1.5rem;
+      color: #666;
+      margin-bottom: 2rem;
+    }
+
+    .not-found a {
+      display: inline-block;
+      padding: 0.75rem 2rem;
+      background: #667eea;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      transition: background 0.3s;
+    }
+
+    .not-found a:hover {
+      background: #5a67d8;
+    }
+
+    /* Home Page */
+    .home {
+      background: white;
+      border-radius: 8px;
+      padding: 3rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    .home h1 {
+      font-size: 2.5rem;
+      color: #667eea;
+      margin-bottom: 1.5rem;
+    }
+
+    .home p {
+      font-size: 1.2rem;
+      color: #666;
+      margin-bottom: 2rem;
+    }
+
+    .home ul {
+      list-style: none;
+      text-align: left;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .home li {
+      padding: 1rem;
+      margin-bottom: 0.5rem;
+      background: #f9fafb;
+      border-left: 4px solid #667eea;
+      border-radius: 4px;
+    }
+
+    /* About Page */
+    .about {
+      background: white;
+      border-radius: 8px;
+      padding: 3rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .about h1 {
+      color: #667eea;
+      margin-bottom: 2rem;
+    }
+
+    .about ul {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .about li {
+      padding: 1rem;
+      background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+    }
+
+    /* Transitions */
+    .fade-in {
+      animation: fadeIn 0.3s ease-in;
+    }
+
+    .fade-out {
+      animation: fadeOut 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeOut {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(-10px); }
+    }
+
+    .route-updated {
+      animation: highlight 0.3s ease;
+    }
+
+    @keyframes highlight {
+      0% { background-color: rgba(102, 126, 234, 0.1); }
+      100% { background-color: transparent; }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .dashboard,
+      .users-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .dashboard-sidebar,
+      .users-list {
+        display: none;
+      }
+
+      .app-header nav {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+
+      .app-content {
+        padding: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Loading application...</p>
+    </div>
+  </div>
+
+  <script type="module">
+    // ================================================================
+    // Mock Implementation of Enhanced View Layer Features
+    // In production, these would be imported from the actual modules
+    // ================================================================
+
+    // Simple HTML template tag for demonstration
+    const html = (strings, ...values) => {
+      let result = '';
+      strings.forEach((str, i) => {
+        result += str;
+        if (i < values.length) {
+          const value = values[i];
+          if (Array.isArray(value)) {
+            result += value.join('');
+          } else if (value != null) {
+            result += value;
+          }
+        }
+      });
+      return result;
+    };
+
+    // Mock router implementation
+    class MockRouter {
+      constructor() {
+        this.currentPath = window.location.pathname;
+        this.routes = new Map();
+        this.outlets = new Set();
+        this.currentMatch = null;
+        this.subscribers = new Set();
+      }
+
+      addRoute(path, view, parent = null) {
+        this.routes.set(path, { path, view, parent });
+      }
+
+      navigate(path) {
+        this.currentPath = path;
+        window.history.pushState({}, '', path);
+        this.render();
+      }
+
+      match(path) {
+        // Find matching route
+        for (const [routePath, route] of this.routes) {
+          if (this.pathMatches(path, routePath)) {
+            return {
+              route,
+              params: this.extractParams(path, routePath),
+              pathname: path
+            };
+          }
+        }
+        return null;
+      }
+
+      pathMatches(path, pattern) {
+        if (pattern === path) return true;
+
+        const pathParts = path.split('/').filter(Boolean);
+        const patternParts = pattern.split('/').filter(Boolean);
+
+        if (pathParts.length !== patternParts.length && !pattern.includes('*')) {
+          return false;
+        }
+
+        for (let i = 0; i < patternParts.length; i++) {
+          if (patternParts[i].startsWith(':')) continue;
+          if (patternParts[i] === '*') return true;
+          if (patternParts[i] !== pathParts[i]) return false;
+        }
+
+        return true;
+      }
+
+      extractParams(path, pattern) {
+        const params = {};
+        const pathParts = path.split('/').filter(Boolean);
+        const patternParts = pattern.split('/').filter(Boolean);
+
+        patternParts.forEach((part, i) => {
+          if (part.startsWith(':')) {
+            params[part.slice(1)] = pathParts[i];
+          }
+        });
+
+        return params;
+      }
+
+      render() {
+        const match = this.match(this.currentPath);
+        this.currentMatch = match;
+
+        if (match && match.route.view) {
+          const content = match.route.view({ match });
+          this.updateDOM(content);
+        } else {
+          this.updateDOM(this.notFoundView());
+        }
+
+        // Notify subscribers
+        this.subscribers.forEach(callback => callback(match));
+
+        // Handle outlets
+        this.handleOutlets();
+      }
+
+      updateDOM(content) {
+        const app = document.getElementById('app');
+        if (app) {
+          // Simple morphdom-like update (just replacing for demo)
+          const oldActive = document.activeElement;
+          app.innerHTML = content;
+
+          // Try to restore focus
+          if (oldActive && oldActive.id) {
+            const newActive = document.getElementById(oldActive.id);
+            if (newActive) newActive.focus();
+          }
+        }
+      }
+
+      handleOutlets() {
+        const outlets = document.querySelectorAll('[router-outlet]');
+        outlets.forEach(outlet => {
+          const parentId = outlet.getAttribute('router-outlet-parent');
+          // Find child route for this outlet
+          const childPath = this.findChildPath(this.currentPath, parentId);
+          if (childPath) {
+            const childMatch = this.match(childPath);
+            if (childMatch && childMatch.route.view) {
+              outlet.innerHTML = childMatch.route.view({ match: childMatch });
+            }
+          }
+        });
+      }
+
+      findChildPath(currentPath, parentId) {
+        // Simplified child path finding
+        for (const [path, route] of this.routes) {
+          if (path.startsWith(currentPath) && path !== currentPath) {
+            return path;
+          }
+        }
+        return null;
+      }
+
+      notFoundView() {
+        return `
+          <div class="not-found">
+            <h1>404</h1>
+            <p>Page not found</p>
+            <a href="/">Go home</a>
+          </div>
+        `;
+      }
+
+      subscribe(callback) {
+        this.subscribers.add(callback);
+        return () => this.subscribers.delete(callback);
+      }
+
+      start() {
+        // Handle initial render
+        this.render();
+
+        // Handle browser navigation
+        window.addEventListener('popstate', () => {
+          this.currentPath = window.location.pathname;
+          this.render();
+        });
+
+        // Handle link clicks
+        document.addEventListener('click', (e) => {
+          const link = e.target.closest('a[href]');
+          if (link && link.origin === window.location.origin) {
+            e.preventDefault();
+            this.navigate(link.pathname);
+          }
+        });
+      }
+    }
+
+    // ================================================================
+    // Mock Data
+    // ================================================================
+
+    const mockData = {
+      users: [
+        { id: '1', name: 'Alice Johnson', email: 'alice@example.com', role: 'admin' },
+        { id: '2', name: 'Bob Smith', email: 'bob@example.com', role: 'user' },
+        { id: '3', name: 'Charlie Brown', email: 'charlie@example.com', role: 'user' }
+      ],
+      posts: [
+        { id: '1', userId: '1', title: 'Getting Started with Combi-Router' },
+        { id: '2', userId: '1', title: 'Advanced Routing Patterns' },
+        { id: '3', userId: '2', title: 'My First Post' }
+      ],
+      stats: {
+        users: 3,
+        posts: 3,
+        views: 1234
+      },
+      settings: {
+        theme: 'dark',
+        notifications: true,
+        language: 'en'
+      }
+    };
+
+    // ================================================================
+    // Application Routes
+    // ================================================================
+
+    const router = new MockRouter();
+
+    // App shell view
+    const appView = ({ match }) => html`
+      <div class="app">
+        <header class="app-header">
+          <nav>
+            <a href="/" class="${match?.pathname === '/' ? 'active' : ''}">Home</a>
+            <a href="/dashboard" class="${match?.pathname?.startsWith('/dashboard') ? 'active' : ''}">Dashboard</a>
+            <a href="/users" class="${match?.pathname?.startsWith('/users') ? 'active' : ''}">Users</a>
+            <a href="/about" class="${match?.pathname === '/about' ? 'active' : ''}">About</a>
+            <a href="/error-demo">Error Demo</a>
+          </nav>
+        </header>
+        <main class="app-content" router-outlet></main>
+      </div>
+    `;
+
+    // Home view
+    const homeView = () => html`
+      <div class="home">
+        <h1>Welcome to Enhanced Combi-Router</h1>
+        <p>This showcase demonstrates the powerful features of the enhanced view layer:</p>
+        <ul>
+          <li>✨ <strong>HTML Template Support</strong> - Using template literals for dynamic content</li>
+          <li>⚡ <strong>Morphdom Integration</strong> - Efficient DOM updates (simulated)</li>
+          <li>🎯 <strong>Hierarchical Nested Routing</strong> - Parent-child route relationships</li>
+          <li>📦 <strong>Router Outlets</strong> - Automatic child route rendering</li>
+          <li>🚀 <strong>Performance Optimized</strong> - Smart caching and lazy loading</li>
+          <li>🔧 <strong>Advanced View Functions</strong> - Conditional, error boundary, and composed views</li>
+        </ul>
+      </div>
+    `;
+
+    // Dashboard view with outlet
+    const dashboardView = ({ match }) => html`
+      <div class="dashboard">
+        <aside class="dashboard-sidebar">
+          <h2>Dashboard</h2>
+          <nav>
+            <a href="/dashboard" class="${match?.pathname === '/dashboard' ? 'active' : ''}">Overview</a>
+            <a href="/dashboard/analytics" class="${match?.pathname === '/dashboard/analytics' ? 'active' : ''}">Analytics</a>
+            <a href="/dashboard/settings" class="${match?.pathname === '/dashboard/settings' ? 'active' : ''}">Settings</a>
+          </nav>
+        </aside>
+        <div class="dashboard-content" router-outlet></div>
+      </div>
+    `;
+
+    // Dashboard overview
+    const dashboardOverviewView = () => html`
+      <div class="overview">
+        <h3>Dashboard Overview</h3>
+        <p>Welcome to your dashboard. Here's a quick summary:</p>
+        <div class="stats">
+          <div class="stat-card">
+            <h4>Total Users</h4>
+            <p>${mockData.stats.users}</p>
+          </div>
+          <div class="stat-card">
+            <h4>Total Posts</h4>
+            <p>${mockData.stats.posts}</p>
+          </div>
+          <div class="stat-card">
+            <h4>Page Views</h4>
+            <p>${mockData.stats.views}</p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Dashboard analytics
+    const dashboardAnalyticsView = () => html`
+      <div class="analytics">
+        <h3>Analytics</h3>
+        <p>Chart visualization would go here</p>
+        <canvas id="chart" style="border: 1px solid #e5e7eb; width: 100%; height: 300px;"></canvas>
+      </div>
+    `;
+
+    // Dashboard settings
+    const dashboardSettingsView = () => html`
+      <div class="settings">
+        <h3>Settings</h3>
+        <section>
+          <h4>Theme</h4>
+          <select value="${mockData.settings.theme}">
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+            <option value="auto">Auto</option>
+          </select>
+        </section>
+        <section>
+          <h4>Notifications</h4>
+          <label>
+            <input type="checkbox" ${mockData.settings.notifications ? 'checked' : ''}>
+            Enable notifications
+          </label>
+        </section>
+        <section>
+          <h4>Language</h4>
+          <select value="${mockData.settings.language}">
+            <option value="en">English</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+          </select>
+        </section>
+      </div>
+    `;
+
+    // Users list view with outlet for detail
+    const usersView = ({ match }) => html`
+      <div class="users-layout">
+        <div class="users-list">
+          <h2>Users</h2>
+          <ul>
+            ${mockData.users.map(user => html`
+              <li>
+                <a href="/users/${user.id}" class="${match?.params?.id === user.id ? 'active' : ''}">
+                  ${user.name}
+                </a>
+              </li>
+            `)}
+          </ul>
+        </div>
+        <div class="user-detail" router-outlet>
+          <p style="text-align: center; color: #999;">Select a user to view details</p>
+        </div>
+      </div>
+    `;
+
+    // User detail view (conditional based on role)
+    const userDetailView = ({ match }) => {
+      const user = mockData.users.find(u => u.id === match.params.id);
+      const userPosts = mockData.posts.filter(p => p.userId === match.params.id);
+
+      if (!user) {
+        return html`<div class="user-detail"><p>User not found</p></div>`;
+      }
+
+      // Conditional rendering based on role
+      if (user.role === 'admin') {
+        return html`
+          <div class="user-detail admin">
+            <h3>${user.name} (Admin)</h3>
+            <p>Email: ${user.email}</p>
+            <div class="admin-controls">
+              <button>Edit User</button>
+              <button>Delete User</button>
+              <button>View Logs</button>
+            </div>
+            <h4>Posts (${userPosts.length})</h4>
+            <ul>
+              ${userPosts.map(post => html`<li>${post.title}</li>`)}
+            </ul>
+          </div>
+        `;
+      } else {
+        return html`
+          <div class="user-detail">
+            <h3>${user.name}</h3>
+            <p>Email: ${user.email}</p>
+            <h4>Posts (${userPosts.length})</h4>
+            <ul>
+              ${userPosts.map(post => html`<li>${post.title}</li>`)}
+            </ul>
+          </div>
+        `;
+      }
+    };
+
+    // About view (simulated lazy loading)
+    const aboutView = () => {
+      // Simulate lazy loading
+      return html`
+        <div class="about">
+          <h1>About Enhanced Combi-Router</h1>
+          <p>This enhanced view layer extends Combi-Router with powerful features:</p>
+          <ul>
+            <li><strong>Universal Template Support</strong> - Works with any templating system</li>
+            <li><strong>Morphdom Integration</strong> - Efficient DOM patching</li>
+            <li><strong>True Nested Routing</strong> - Hierarchical route composition</li>
+            <li><strong>Performance Optimized</strong> - Built-in caching and lazy loading</li>
+            <li><strong>Zero Lock-in</strong> - Use your preferred libraries</li>
+            <li><strong>TypeScript Ready</strong> - Full type safety</li>
+          </ul>
+        </div>
+      `;
+    };
+
+    // Error demo view (error boundary example)
+    const errorDemoView = () => html`
+      <div class="error-boundary">
+        <h2>Error Boundary Demo</h2>
+        <p class="error-message">This demonstrates error handling in views</p>
+        <p>In a real application, this would catch and display rendering errors gracefully.</p>
+        <button onclick="window.location.href='/'">Go Home</button>
+      </div>
+    `;
+
+    // ================================================================
+    // Route Registration
+    // ================================================================
+
+    // Register all routes
+    router.addRoute('/', homeView);
+    router.addRoute('/dashboard', dashboardView);
+    router.addRoute('/dashboard/analytics', dashboardAnalyticsView);
+    router.addRoute('/dashboard/settings', dashboardSettingsView);
+    router.addRoute('/users', usersView);
+    router.addRoute('/users/:id', userDetailView);
+    router.addRoute('/about', aboutView);
+    router.addRoute('/error-demo', errorDemoView);
+
+    // Wrap all views with app shell
+    const originalRender = router.render.bind(router);
+    router.render = function() {
+      const match = this.match(this.currentPath);
+      this.currentMatch = match;
+
+      // First render app shell
+      if (match) {
+        const appContent = appView({ match });
+        this.updateDOM(appContent);
+
+        // Then render child content in outlet
+        const outlet = document.querySelector('[router-outlet]');
+        if (outlet && match.route.view) {
+          outlet.innerHTML = match.route.view({ match });
+        }
+
+        // Handle nested outlets
+        this.handleOutlets();
+      } else {
+        this.updateDOM(this.notFoundView());
+      }
+
+      // Update active states
+      document.querySelectorAll('a[href]').forEach(link => {
+        const href = link.getAttribute('href');
+        if (href === this.currentPath ||
+            (href !== '/' && this.currentPath.startsWith(href))) {
+          link.classList.add('active');
+        } else {
+          link.classList.remove('active');
+        }
+      });
+    };
+
+    // ================================================================
+    // Initialize Application
+    // ================================================================
+
+    // Start the router when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => router.start());
+    } else {
+      router.start();
+    }
+
+    // Export for debugging
+    window.router = router;
+    window.mockData = mockData;
+
+    console.log('Enhanced View Layer Showcase initialized!');
+    console.log('Try navigating to different routes to see the features in action.');
+    console.log('Router available at window.router for debugging.');
+  </script>
+</body>
+</html>

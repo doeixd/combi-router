@@ -105,7 +105,7 @@ describe("View Layer", () => {
       );
 
       const router = createLayeredRouter([homeRoute])(
-        createCoreNavigationLayer(),
+        createCoreNavigationLayer({ errorStrategy: "graceful" }),
       )(
         createViewLayer({
           root: "#app-root",
@@ -151,7 +151,7 @@ describe("View Layer", () => {
       );
 
       const router = createLayeredRouter([userRoute])(
-        createCoreNavigationLayer(),
+        createCoreNavigationLayer({ errorStrategy: "graceful" }),
       )(
         createLoaderLayer({
           debug: true,
@@ -183,7 +183,7 @@ describe("View Layer", () => {
       );
 
       const router = createLayeredRouter([nodeRoute])(
-        createCoreNavigationLayer(),
+        createCoreNavigationLayer({ errorStrategy: "graceful" }),
       )(
         createViewLayer({
           root: "#app-root",
@@ -218,7 +218,7 @@ describe("View Layer", () => {
       );
 
       const router = createLayeredRouter([slowRoute])(
-        createCoreNavigationLayer(),
+        createCoreNavigationLayer({ errorStrategy: "graceful" }),
       )(
         createLoaderLayer({
           debug: true,
@@ -253,7 +253,7 @@ describe("View Layer", () => {
       );
 
       const router = createLayeredRouter([errorRoute])(
-        createCoreNavigationLayer(),
+        createCoreNavigationLayer({ errorStrategy: "graceful" }),
       )(
         createLoaderLayer({
           debug: true,
@@ -280,7 +280,7 @@ describe("View Layer", () => {
       );
 
       const router = createLayeredRouter([homeRoute])(
-        createCoreNavigationLayer(),
+        createCoreNavigationLayer({ errorStrategy: "graceful" }),
       )(
         createViewLayer({
           root: "#app-root",
@@ -310,7 +310,7 @@ describe("View Layer", () => {
       );
 
       const router = createLayeredRouter([homeRoute, aboutRoute])(
-        createCoreNavigationLayer(),
+        createCoreNavigationLayer({ errorStrategy: "graceful" }),
       )(
         createViewLayer({
           root: "#app-root",
@@ -344,7 +344,7 @@ describe("View Layer", () => {
       );
 
       const router = createLayeredRouter([homeRoute])(
-        createCoreNavigationLayer(),
+        createCoreNavigationLayer({ errorStrategy: "graceful" }),
       )(
         createViewLayer({
           root: "#app-root",
@@ -378,7 +378,7 @@ describe("View Layer", () => {
       );
 
       const router = createLayeredRouter([homeRoute])(
-        createCoreNavigationLayer(),
+        createCoreNavigationLayer({ errorStrategy: "graceful" }),
       )(
         createViewLayer({
           root: "#app-root",
@@ -415,7 +415,7 @@ describe("View Layer", () => {
       );
 
       const router = createLayeredRouter([homeRoute])(
-        createCoreNavigationLayer(),
+        createCoreNavigationLayer({ errorStrategy: "graceful" }),
       )(
         createViewLayer({
           root: "#app-root",
@@ -434,7 +434,7 @@ describe("View Layer", () => {
       );
 
       const router = createLayeredRouter([homeRoute])(
-        createCoreNavigationLayer(),
+        createCoreNavigationLayer({ errorStrategy: "graceful" }),
       )(
         createViewLayer({
           root: "#app-root",
@@ -452,7 +452,7 @@ describe("View Layer", () => {
       );
 
       const router = createLayeredRouter([homeRoute])(
-        createCoreNavigationLayer(),
+        createCoreNavigationLayer({ errorStrategy: "graceful" }),
       )(
         createViewLayer({
           root: "#app-root",
@@ -472,7 +472,7 @@ describe("View Layer", () => {
   });
 
   describe("Error Handling", () => {
-    it("should handle view rendering errors gracefully", () => {
+    it("should handle view rendering errors gracefully", async () => {
       const errorRoute = pipe(
         route(path("error"), end),
         view(() => {
@@ -481,7 +481,7 @@ describe("View Layer", () => {
       );
 
       const router = createLayeredRouter([errorRoute])(
-        createCoreNavigationLayer(),
+        createCoreNavigationLayer({ errorStrategy: "graceful" }),
       )(
         createViewLayer({
           root: "#app-root",
@@ -492,7 +492,7 @@ describe("View Layer", () => {
 
       activeRouters.push(router);
 
-      router.navigate("/error");
+      await router.navigate("/error");
 
       const rootElement = document.getElementById("app-root");
       expect(rootElement?.innerHTML).toContain("View rendering failed");
@@ -505,7 +505,7 @@ describe("View Layer", () => {
       );
 
       const router = createLayeredRouter([noViewRoute])(
-        createCoreNavigationLayer(),
+        createCoreNavigationLayer({ errorStrategy: "graceful" }),
       )(
         createViewLayer({
           root: "#app-root",
@@ -530,7 +530,7 @@ describe("View Layer", () => {
 
       expect(() => {
         const router = createLayeredRouter([homeRoute])(
-          createCoreNavigationLayer(),
+          createCoreNavigationLayer({ errorStrategy: "graceful" }),
         )(
           createViewLayer({
             root: "#nonexistent",
@@ -549,7 +549,7 @@ describe("View Layer", () => {
       const rootElement = document.getElementById("app-root")!;
 
       const router = createLayeredRouter([homeRoute])(
-        createCoreNavigationLayer(),
+        createCoreNavigationLayer({ errorStrategy: "graceful" }),
       )(
         createViewLayer({
           root: rootElement,
@@ -568,7 +568,7 @@ describe("View Layer", () => {
       );
 
       const router = createLayeredRouter([homeRoute])(
-        createCoreNavigationLayer(),
+        createCoreNavigationLayer({ errorStrategy: "graceful" }),
       )(
         createViewLayer({
           root: "#app-root",
@@ -604,7 +604,7 @@ describe("View Layer", () => {
       );
 
       const router = createLayeredRouter([homeRoute])(
-        createCoreNavigationLayer(),
+        createCoreNavigationLayer({ errorStrategy: "graceful" }),
       )(
         createViewLayer({
           root: "#app-root",
@@ -634,7 +634,7 @@ describe("View Layer", () => {
       );
 
       const router = createLayeredRouter([contextRoute])(
-        createCoreNavigationLayer(),
+        createCoreNavigationLayer({ errorStrategy: "graceful" }),
       )(
         createLoaderLayer({
           debug: true,
@@ -664,7 +664,7 @@ describe("View Layer", () => {
       );
 
       const router = createLayeredRouter([homeRoute])(
-        createCoreNavigationLayer(),
+        createCoreNavigationLayer({ errorStrategy: "graceful" }),
       )(
         createViewLayer({
           root: "#app-root",

@@ -6,17 +6,22 @@
 //
 // =================================================================
 
-import { makeLayered } from './make-layered';
-import type { Route, RouteMatch, NavigationController, RouterOptions } from './types';
-import type { RouterContext } from './layer-types';
-import { CombiRouter } from './router';
+import { makeLayered } from "./make-layered";
+import type {
+  Route,
+  RouteMatch,
+  NavigationController,
+  RouterOptions,
+} from "./types";
+import type { RouterContext } from "./layer-types";
+import { CombiRouter } from "./router";
 
 export function createComposableRouter(
-  routes: Route<any>[], 
+  routes: Route<any>[],
   options: {
     baseURL?: string;
     hashMode?: boolean;
-  } = {}
+  } = {},
 ) {
   // Initial router context
   const initialContext: RouterContext = {
@@ -24,21 +29,26 @@ export function createComposableRouter(
     baseURL: options.baseURL,
     hashMode: options.hashMode ?? false,
     currentMatch: null,
-    isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+    isOnline: typeof navigator !== "undefined" ? navigator.onLine : true,
     isFetching: false,
     listeners: new Set(),
-    currentNavigation: null
+    currentNavigation: null,
   };
 
   // Base router methods - these will be bound to the context
   const baseMethods = {
+    // Route accessor
+    routes: (self: RouterContext) => self.routes,
 
     // Event management
-    subscribe: (self: RouterContext, listener: (match: RouteMatch<any> | null) => void) => {
+    subscribe: (
+      self: RouterContext,
+      listener: (match: RouteMatch<any> | null) => void,
+    ) => {
       self.listeners.add(listener);
       // Call immediately with current match
       listener(self.currentMatch);
-      
+
       // Return unsubscribe function
       return () => {
         self.listeners.delete(listener);
@@ -58,13 +68,13 @@ export function createComposableRouter(
       // Use the underlying CombiRouter for navigation
       const fallbackRouter = new CombiRouter(self.routes, {
         baseURL: self.baseURL,
-        hashMode: self.hashMode
+        hashMode: self.hashMode,
       });
-      
+
       // Find the route that matches this path
       const match = fallbackRouter.match(path);
       if (!match) return false;
-      
+
       const result = await fallbackRouter.navigate(match.route, match.params);
       if (result.success) {
         self.currentMatch = match;
@@ -86,16 +96,20 @@ export function createComposableRouter(
       // Using CombiRouter for actual matching logic
       const fallbackRouter = new CombiRouter(self.routes, {
         baseURL: self.baseURL,
-        hashMode: self.hashMode
+        hashMode: self.hashMode,
       });
       return fallbackRouter.match(url);
     },
 
-    build: (self: RouterContext, route: Route<any>, params: Record<string, any>) => {
+    build: (
+      self: RouterContext,
+      route: Route<any>,
+      params: Record<string, any>,
+    ) => {
       // Using CombiRouter for actual building logic
       const fallbackRouter = new CombiRouter(self.routes, {
         baseURL: self.baseURL,
-        hashMode: self.hashMode
+        hashMode: self.hashMode,
       });
       return fallbackRouter.build(route, params);
     },
@@ -105,7 +119,7 @@ export function createComposableRouter(
       if (!route || !route.id) {
         return false; // Invalid route
       }
-      const existingIndex = self.routes.findIndex(r => r.id === route.id);
+      const existingIndex = self.routes.findIndex((r) => r.id === route.id);
       if (existingIndex !== -1) {
         return false; // Route already exists
       }
@@ -117,7 +131,7 @@ export function createComposableRouter(
       if (!route || !route.id) {
         return false; // Invalid route
       }
-      const index = self.routes.findIndex(r => r.id === route.id);
+      const index = self.routes.findIndex((r) => r.id === route.id);
       if (index === -1) {
         return false; // Route not found
       }
@@ -128,7 +142,7 @@ export function createComposableRouter(
     // Route prefetching
     peek: (self: RouterContext) => {
       self.isFetching = true;
-      return new Promise<void>(resolve => {
+      return new Promise<void>((resolve) => {
         setTimeout(() => {
           self.isFetching = false;
           resolve();
@@ -147,7 +161,11 @@ export function createComposableRouter(
     },
 
     getRouteTree: (self: RouterContext) => {
-      return JSON.stringify(self.routes.map(r => ({ id: r.id, metadata: r.metadata })), null, 2);
+      return JSON.stringify(
+        self.routes.map((r) => ({ id: r.id, metadata: r.metadata })),
+        null,
+        2,
+      );
     },
 
     // Internal navigation state management (for layers to use)
@@ -158,7 +176,10 @@ export function createComposableRouter(
       }
     },
 
-    _setCurrentNavigation: (self: RouterContext, controller: NavigationController | null) => {
+    _setCurrentNavigation: (
+      self: RouterContext,
+      controller: NavigationController | null,
+    ) => {
       self.currentNavigation = controller;
     },
 
@@ -174,7 +195,7 @@ export function createComposableRouter(
 
     _setFetching: (self: RouterContext, fetching: boolean) => {
       self.isFetching = fetching;
-    }
+    },
   };
 
   return makeLayered(initialContext)(baseMethods);
@@ -182,17 +203,20 @@ export function createComposableRouter(
 
 // Enhanced createComposableRouter that returns a proper builder
 export function createLayeredRouter(
-  routes: Route<any>[], 
+  routes: Route<any>[],
   options: {
     baseURL?: string;
     hashMode?: boolean;
-  } = {}
+  } = {},
 ) {
   return createComposableRouter(routes, options);
 }
 
 // Convenience function that creates a working router with the original implementation
-export function createRouter(routes: Route<any>[], options: RouterOptions = {}): CombiRouter {
+export function createRouter(
+  routes: Route<any>[],
+  options: RouterOptions = {},
+): CombiRouter {
   return new CombiRouter(routes, options);
 }
 
@@ -201,10 +225,9 @@ export const identityLayer = () => () => ({});
 
 // Helper to conditionally apply a layer
 export const conditionalLayer = <T extends object>(
-  condition: boolean, 
-  layer: (router: any) => T
-) => 
-  condition ? layer : identityLayer();
+  condition: boolean,
+  layer: (router: any) => T,
+) => (condition ? layer : identityLayer());
 
 // Re-export makeLayered for advanced users
-export { makeLayered } from './make-layered';
+export { makeLayered } from "./make-layered";

@@ -8,19 +8,50 @@
 //
 // =================================================================
 
-import type { CombiRouter } from '../core/router';
+import type { CombiRouter } from "../core/router";
 
 // Import all dev modules
-export * from './warnings';
-export * from './conflicts';
-export * from './performance';
-export * from './debugging';
-export * from './validation';
+export * from "./warnings";
+export * from "./conflicts";
+export * from "./performance";
+export * from "./debugging";
+export * from "./validation";
 
-import { DevWarningSystem, createWarningSystem, type WarningConfig } from './warnings';
-import { RouteConflictDetector, analyzeRouteConflicts, logRouteConflicts } from './conflicts';
-import { PerformanceMonitor, createPerformanceMonitor, type PerformanceConfig } from './performance';
-import { RouterDebugger, createDebugger, analyzeRouterStructure } from './debugging';
+import {
+  DevWarningSystem,
+  createWarningSystem,
+  type WarningConfig,
+} from "./warnings";
+import {
+  RouteConflictDetector,
+  analyzeRouteConflicts,
+  logRouteConflicts,
+} from "./conflicts";
+import {
+  PerformanceMonitor,
+  createPerformanceMonitor,
+  type PerformanceConfig,
+} from "./performance";
+import {
+  RouterDebugger,
+  createDebugger,
+  analyzeRouterStructure,
+} from "./debugging";
+
+// =================================================================
+// -------------------- HELPER FUNCTIONS -------------------------
+// =================================================================
+
+/**
+ * Helper function to get routes from router regardless of whether
+ * routes is a function (layered router) or array property (CombiRouter)
+ */
+function getRoutes(router: any): any[] {
+  if (typeof router.routes === "function") {
+    return router.routes();
+  }
+  return router.routes || [];
+}
 
 // =================================================================
 // ---------------- DEV MODE CONFIGURATION -----------------------
@@ -55,21 +86,21 @@ export class CombiRouterDevMode {
   constructor(router: CombiRouter, config: Partial<DevModeConfig> = {}) {
     this.router = router;
     this.config = {
-      enabled: process.env.NODE_ENV !== 'production',
+      enabled: process.env.NODE_ENV !== "production",
       warnings: true,
       conflictDetection: true,
       performanceMonitoring: true,
       routeValidation: true,
       debugMode: true,
       autoAnalyze: true,
-      ...config
+      ...config,
     };
 
     this.features = {
       warningSystem: null,
       conflictDetector: null,
       performanceMonitor: null,
-      debugger: null
+      debugger: null,
     };
 
     if (this.config.enabled) {
@@ -78,23 +109,35 @@ export class CombiRouterDevMode {
   }
 
   private init(): void {
-    console.log('[CombiRouter] Initializing development mode...');
+    console.log("[CombiRouter] Initializing development mode...");
 
     // Initialize warning system
     if (this.config.warnings) {
-      const warningConfig = typeof this.config.warnings === 'object' ? this.config.warnings : {};
-      this.features.warningSystem = createWarningSystem(this.router, warningConfig);
+      const warningConfig =
+        typeof this.config.warnings === "object" ? this.config.warnings : {};
+      this.features.warningSystem = createWarningSystem(
+        this.router,
+        warningConfig,
+      );
     }
 
     // Initialize conflict detector
     if (this.config.conflictDetection) {
-      this.features.conflictDetector = new RouteConflictDetector(this.router.routes);
+      this.features.conflictDetector = new RouteConflictDetector(
+        getRoutes(this.router),
+      );
     }
 
     // Initialize performance monitor
     if (this.config.performanceMonitoring) {
-      const perfConfig = typeof this.config.performanceMonitoring === 'object' ? this.config.performanceMonitoring : {};
-      this.features.performanceMonitor = createPerformanceMonitor(this.router, perfConfig);
+      const perfConfig =
+        typeof this.config.performanceMonitoring === "object"
+          ? this.config.performanceMonitoring
+          : {};
+      this.features.performanceMonitor = createPerformanceMonitor(
+        this.router,
+        perfConfig,
+      );
     }
 
     // Initialize debugger
@@ -108,21 +151,21 @@ export class CombiRouterDevMode {
     }
 
     // Log successful initialization
-    console.log('[CombiRouter] Development mode initialized successfully');
+    console.log("[CombiRouter] Development mode initialized successfully");
     this.logFeatureStatus();
   }
 
   private runInitialAnalysis(): void {
-    console.group('[CombiRouter] Running initial analysis...');
+    console.group("[CombiRouter] Running initial analysis...");
 
     // Analyze route conflicts
     if (this.features.conflictDetector) {
       const conflicts = this.features.conflictDetector.analyzeConflicts();
       if (conflicts.conflicts.length > 0) {
         console.warn(`Found ${conflicts.conflicts.length} route conflicts`);
-        logRouteConflicts(this.router.routes);
+        logRouteConflicts(getRoutes(this.router));
       } else {
-        console.log('✅ No route conflicts detected');
+        console.log("✅ No route conflicts detected");
       }
     }
 
@@ -137,7 +180,7 @@ export class CombiRouterDevMode {
       if (warnings.length > 0) {
         console.warn(`${warnings.length} development warnings detected`);
       } else {
-        console.log('✅ No development warnings');
+        console.log("✅ No development warnings");
       }
     }
 
@@ -145,11 +188,23 @@ export class CombiRouterDevMode {
   }
 
   private logFeatureStatus(): void {
-    console.group('[CombiRouter] Development Features Status');
-    console.log('Warning System:', this.features.warningSystem ? '✅ Active' : '❌ Disabled');
-    console.log('Conflict Detection:', this.features.conflictDetector ? '✅ Active' : '❌ Disabled');
-    console.log('Performance Monitor:', this.features.performanceMonitor ? '✅ Active' : '❌ Disabled');
-    console.log('Enhanced Debugger:', this.features.debugger ? '✅ Active' : '❌ Disabled');
+    console.group("[CombiRouter] Development Features Status");
+    console.log(
+      "Warning System:",
+      this.features.warningSystem ? "✅ Active" : "❌ Disabled",
+    );
+    console.log(
+      "Conflict Detection:",
+      this.features.conflictDetector ? "✅ Active" : "❌ Disabled",
+    );
+    console.log(
+      "Performance Monitor:",
+      this.features.performanceMonitor ? "✅ Active" : "❌ Disabled",
+    );
+    console.log(
+      "Enhanced Debugger:",
+      this.features.debugger ? "✅ Active" : "❌ Disabled",
+    );
     console.groupEnd();
   }
 
@@ -162,18 +217,20 @@ export class CombiRouterDevMode {
    */
   public getDevReport(): any {
     if (!this.config.enabled) {
-      return { error: 'Development mode is disabled' };
+      return { error: "Development mode is disabled" };
     }
 
     const report = {
       timestamp: new Date().toISOString(),
       config: this.config,
       warnings: this.features.warningSystem?.getWarnings() || [],
-      conflicts: this.features.conflictDetector?.analyzeConflicts() || { conflicts: [] },
+      conflicts: this.features.conflictDetector?.analyzeConflicts() || {
+        conflicts: [],
+      },
       performance: this.features.performanceMonitor?.getMetrics() || null,
       routeAnalysis: this.features.debugger?.analyzeRoutes() || [],
       validation: this.features.debugger?.validateRouteConfiguration() || null,
-      optimizations: this.features.debugger?.suggestOptimizations() || []
+      optimizations: this.features.debugger?.suggestOptimizations() || [],
     };
 
     return report;
@@ -184,43 +241,55 @@ export class CombiRouterDevMode {
    */
   public logDevReport(): void {
     if (!this.config.enabled) {
-      console.log('[CombiRouter] Development mode is disabled');
+      console.log("[CombiRouter] Development mode is disabled");
       return;
     }
 
     const report = this.getDevReport();
 
-    console.group('[CombiRouter] Comprehensive Development Report');
-    
+    console.group("[CombiRouter] Comprehensive Development Report");
+
     // Summary
     console.log(`Generated at: ${report.timestamp}`);
-    console.log(`Total Routes: ${this.router.routes.length}`);
+    console.log(`Total Routes: ${getRoutes(this.router).length}`);
     console.log(`Warnings: ${report.warnings.length}`);
     console.log(`Conflicts: ${report.conflicts.conflicts.length}`);
-    
+
     // Performance summary
     if (report.performance) {
-      console.group('Performance Summary');
-      console.log(`Navigation Success Rate: ${(report.performance.navigation.successful / report.performance.navigation.total * 100).toFixed(1)}%`);
-      console.log(`Average Navigation Time: ${report.performance.navigation.averageDuration.toFixed(2)}ms`);
-      console.log(`Cache Hit Rate: ${(report.performance.loaders.cacheHits / report.performance.loaders.total * 100).toFixed(1)}%`);
+      console.group("Performance Summary");
+      console.log(
+        `Navigation Success Rate: ${((report.performance.navigation.successful / report.performance.navigation.total) * 100).toFixed(1)}%`,
+      );
+      console.log(
+        `Average Navigation Time: ${report.performance.navigation.averageDuration.toFixed(2)}ms`,
+      );
+      console.log(
+        `Cache Hit Rate: ${((report.performance.loaders.cacheHits / report.performance.loaders.total) * 100).toFixed(1)}%`,
+      );
       console.groupEnd();
     }
 
     // Route analysis summary
     if (report.routeAnalysis.length > 0) {
-      const complexRoutes = report.routeAnalysis.filter((r: any) => r.complexity > 20);
-      console.group('Route Analysis Summary');
+      const complexRoutes = report.routeAnalysis.filter(
+        (r: any) => r.complexity > 20,
+      );
+      console.group("Route Analysis Summary");
       console.log(`High Complexity Routes: ${complexRoutes.length}`);
-      console.log(`Total Issues: ${report.routeAnalysis.reduce((acc: number, r: any) => acc + r.potentialIssues.length, 0)}`);
-      console.log(`Total Optimizations: ${report.routeAnalysis.reduce((acc: number, r: any) => acc + r.optimizations.length, 0)}`);
+      console.log(
+        `Total Issues: ${report.routeAnalysis.reduce((acc: number, r: any) => acc + r.potentialIssues.length, 0)}`,
+      );
+      console.log(
+        `Total Optimizations: ${report.routeAnalysis.reduce((acc: number, r: any) => acc + r.optimizations.length, 0)}`,
+      );
       console.groupEnd();
     }
 
     // Recommendations
     const recommendations = this.generateRecommendations(report);
     if (recommendations.length > 0) {
-      console.group('📋 Recommendations');
+      console.group("📋 Recommendations");
       recommendations.forEach((rec, index) => {
         console.log(`${index + 1}. ${rec}`);
       });
@@ -236,31 +305,44 @@ export class CombiRouterDevMode {
     // Performance recommendations
     if (report.performance) {
       if (report.performance.navigation.averageDuration > 1000) {
-        recommendations.push('Consider optimizing slow routes or adding loading states');
+        recommendations.push(
+          "Consider optimizing slow routes or adding loading states",
+        );
       }
-      
-      const cacheHitRate = report.performance.loaders.cacheHits / report.performance.loaders.total;
+
+      const cacheHitRate =
+        report.performance.loaders.cacheHits / report.performance.loaders.total;
       if (cacheHitRate < 0.3) {
-        recommendations.push('Implement better caching strategies to improve performance');
+        recommendations.push(
+          "Implement better caching strategies to improve performance",
+        );
       }
     }
 
     // Conflict recommendations
     if (report.conflicts.conflicts.length > 0) {
-      recommendations.push('Resolve route conflicts to prevent navigation issues');
+      recommendations.push(
+        "Resolve route conflicts to prevent navigation issues",
+      );
     }
 
     // Warning recommendations
-    const errorWarnings = report.warnings.filter((w: any) => w.severity === 'error');
+    const errorWarnings = report.warnings.filter(
+      (w: any) => w.severity === "error",
+    );
     if (errorWarnings.length > 0) {
-      recommendations.push('Fix critical routing errors immediately');
+      recommendations.push("Fix critical routing errors immediately");
     }
 
     // Optimization recommendations
     if (report.optimizations.length > 0) {
-      const highPriority = report.optimizations.filter((o: any) => o.priority === 'high');
+      const highPriority = report.optimizations.filter(
+        (o: any) => o.priority === "high",
+      );
       if (highPriority.length > 0) {
-        recommendations.push('Implement high-priority optimizations for better performance');
+        recommendations.push(
+          "Implement high-priority optimizations for better performance",
+        );
       }
     }
 
@@ -281,7 +363,7 @@ export class CombiRouterDevMode {
     this.features.warningSystem?.clearWarnings();
     this.features.performanceMonitor?.clearHistory();
     this.features.debugger?.clearTraces();
-    console.log('[CombiRouter] Development data cleared');
+    console.log("[CombiRouter] Development data cleared");
   }
 
   /**
@@ -289,19 +371,23 @@ export class CombiRouterDevMode {
    */
   public updateConfig(newConfig: Partial<DevModeConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    
+
     // Update individual feature configs
     if (newConfig.warnings && this.features.warningSystem) {
-      const warningConfig = typeof newConfig.warnings === 'object' ? newConfig.warnings : {};
+      const warningConfig =
+        typeof newConfig.warnings === "object" ? newConfig.warnings : {};
       this.features.warningSystem.updateConfig(warningConfig);
     }
 
     if (newConfig.performanceMonitoring && this.features.performanceMonitor) {
-      const perfConfig = typeof newConfig.performanceMonitoring === 'object' ? newConfig.performanceMonitoring : {};
+      const perfConfig =
+        typeof newConfig.performanceMonitoring === "object"
+          ? newConfig.performanceMonitoring
+          : {};
       this.features.performanceMonitor.updateConfig(perfConfig);
     }
 
-    console.log('[CombiRouter] Development mode configuration updated');
+    console.log("[CombiRouter] Development mode configuration updated");
   }
 
   /**
@@ -309,7 +395,7 @@ export class CombiRouterDevMode {
    */
   public toggleFeature(feature: keyof DevModeFeatures, enabled: boolean): void {
     switch (feature) {
-      case 'warningSystem':
+      case "warningSystem":
         if (this.features.warningSystem) {
           if (enabled) {
             this.features.warningSystem.enable();
@@ -318,7 +404,7 @@ export class CombiRouterDevMode {
           }
         }
         break;
-      case 'performanceMonitor':
+      case "performanceMonitor":
         // Performance monitor doesn't have enable/disable, so we'd need to recreate it
         break;
     }
@@ -327,7 +413,9 @@ export class CombiRouterDevMode {
   /**
    * Get access to individual development features
    */
-  public getFeature<T extends keyof DevModeFeatures>(feature: T): DevModeFeatures[T] {
+  public getFeature<T extends keyof DevModeFeatures>(
+    feature: T,
+  ): DevModeFeatures[T] {
     return this.features[feature];
   }
 
@@ -346,8 +434,11 @@ export class CombiRouterDevMode {
 /**
  * Initialize comprehensive development mode for a router
  */
-export function enableDevMode(router: CombiRouter, config?: Partial<DevModeConfig>): CombiRouterDevMode | null {
-  if (process.env.NODE_ENV === 'production') {
+export function enableDevMode(
+  router: CombiRouter,
+  config?: Partial<DevModeConfig>,
+): CombiRouterDevMode | null {
+  if (process.env.NODE_ENV === "production") {
     return null;
   }
 
@@ -358,23 +449,23 @@ export function enableDevMode(router: CombiRouter, config?: Partial<DevModeConfi
  * Quick function to run development analysis on a router
  */
 export function analyzeRouter(router: CombiRouter): void {
-  if (process.env.NODE_ENV === 'production') return;
+  if (process.env.NODE_ENV === "production") return;
 
-  console.group('[CombiRouter] Quick Development Analysis');
+  console.group("[CombiRouter] Quick Development Analysis");
 
   // Run conflict analysis
-  const conflicts = analyzeRouteConflicts(router.routes);
+  const conflicts = analyzeRouteConflicts(getRoutes(router));
   console.log(`Route Conflicts: ${conflicts.conflicts.length}`);
-  
+
   // Run structure analysis
   analyzeRouterStructure(router);
 
   // Create temporary warning system for analysis
-  const warningSystem = createWarningSystem(router, { 
+  const warningSystem = createWarningSystem(router, {
     runtimeWarnings: false,
-    staticWarnings: true 
+    staticWarnings: true,
   });
-  
+
   if (warningSystem) {
     const warnings = warningSystem.getWarnings();
     console.log(`Development Warnings: ${warnings.length}`);
@@ -387,16 +478,16 @@ export function analyzeRouter(router: CombiRouter): void {
  * Create development tools with minimal setup
  */
 export function createDevTools(router: CombiRouter) {
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === "production") {
     return null;
   }
 
   return {
     warnings: createWarningSystem(router),
-    conflicts: new RouteConflictDetector(router.routes),
+    conflicts: new RouteConflictDetector(getRoutes(router)),
     performance: createPerformanceMonitor(router),
     debugger: createDebugger(router),
-    analyze: () => analyzeRouter(router)
+    analyze: () => analyzeRouter(router),
   };
 }
 
@@ -407,11 +498,15 @@ export function createDevTools(router: CombiRouter) {
 /**
  * Add development features to window object for browser debugging
  */
-export function exposeDevTools(router: CombiRouter, devMode?: CombiRouterDevMode): void {
-  if (process.env.NODE_ENV === 'production' || typeof window === 'undefined') return;
+export function exposeDevTools(
+  router: CombiRouter,
+  devMode?: CombiRouterDevMode,
+): void {
+  if (process.env.NODE_ENV === "production" || typeof window === "undefined")
+    return;
 
   const tools = devMode || enableDevMode(router);
-  
+
   // Expose to window for debugging
   (window as any).combiRouterDev = {
     router,
@@ -419,10 +514,12 @@ export function exposeDevTools(router: CombiRouter, devMode?: CombiRouterDevMode
     analyze: () => tools?.runAnalysis(),
     report: () => tools?.logDevReport(),
     export: () => tools?.exportDevData(),
-    clear: () => tools?.clearDevData()
+    clear: () => tools?.clearDevData(),
   };
 
-  console.log('[CombiRouter] Development tools exposed to window.combiRouterDev');
+  console.log(
+    "[CombiRouter] Development tools exposed to window.combiRouterDev",
+  );
 }
 
 // =================================================================
@@ -433,29 +530,25 @@ export type {
   DevModeConfig,
   DevModeFeatures,
   WarningConfig,
-  PerformanceConfig
+  PerformanceConfig,
 };
 
 // Re-export all types from individual modules
-export type {
-  DevWarning,
-  WarningType,
-  WarningSeverity
-} from './warnings';
+export type { DevWarning, WarningType, WarningSeverity } from "./warnings";
 
 export type {
   RouteConflict,
   ConflictType,
-  ConflictAnalysis
-} from './conflicts';
+  ConflictAnalysis,
+} from "./conflicts";
 
 export type {
   NavigationTiming,
   LoaderTiming,
   GuardTiming,
   PerformanceMetrics,
-  PerformanceInsights
-} from './performance';
+  PerformanceInsights,
+} from "./performance";
 
 export type {
   RouteAnalysis,
@@ -463,5 +556,5 @@ export type {
   NavigationStep,
   MatchInspection,
   ValidationReport,
-  Optimization
-} from './debugging';
+  Optimization,
+} from "./debugging";
